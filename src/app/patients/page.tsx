@@ -6,6 +6,7 @@ import React from "react"; // Nécessaire pour <React.Fragment>
 
 const patients: Patient[] = [
   {
+    id: "1",
     name: "Karthi",
     email: "karthi@gmail.com",
     phone: "750547760",
@@ -13,6 +14,7 @@ const patients: Patient[] = [
     lastVisit: "08-Dec-2021",
   },
   {
+    id: "2",
     name: "John",
     email: "john@example.com",
     phone: "123456789",
@@ -20,6 +22,7 @@ const patients: Patient[] = [
     lastVisit: "10-Dec-2021",
   },
 ];
+
 
 export default function PatientsPage() {
   return (

@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 
 export interface Patient {
+  id: string; // ← Ajouter cette ligne
   name: string;
   email: string;
   phone: string;
@@ -10,11 +12,14 @@ export interface Patient {
   lastVisit: string;
 }
 
+
 export default function PatientItem({ patient }: { patient: Patient }) {
   return (
-    <tr className="bg-white w-full  hover:bg-gray-50 transition border-2 border-gray-300 rounded-md">
+    <tr className="bg-white w-full hover:bg-gray-50 transition border-2 border-gray-300 rounded-md">
       <td className="p-3 flex items-center">
-        {patient.name}
+        <Link href={`/patients/${patient.id}`} className="text-blue-600 hover:underline">
+          {patient.name}
+        </Link>
       </td>
       <td className="p-3">{patient.email}</td>
       <td className="p-3">{patient.phone}</td>
