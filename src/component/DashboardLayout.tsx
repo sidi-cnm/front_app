@@ -1,5 +1,5 @@
 import Sidebar from "./Sidebar";
-import Topbar from "./Topbar";
+import Topbar from "./Navbar";
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
