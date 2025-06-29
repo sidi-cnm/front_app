@@ -1,27 +1,58 @@
-import React from "react";
+'use client';
+
+import React, { useRef, useState } from "react";
+import { use } from "react";
 import { notFound } from "next/navigation";
 
 const patients = [
-  {
-    id: "1",
-    name: "Karthi",
-    email: "karthi@gmmail.com",
-  },
-  {
-    id: "2",
-    name: "John",
-    email: "john@example.com",
-  },
+  { id: "1", name: "Karthi", email: "karthi@gmmail.com" },
+  { id: "2", name: "John", email: "john@example.com" },
 ];
 
-export default function PatientProfile({ params }: { params: { id: string } }) {
-  const patient = patients.find((p) => p.id === params.id);
+export default function PatientProfile({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const patient = patients.find((p) => p.id === id);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [popupMessage, setPopupMessage] = useState<string | null>(null);
 
   if (!patient) return notFound();
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("http://localhost:8000/extract", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        setPopupMessage("✅ Document indexé avec succès !");
+      } else {
+        setPopupMessage("❌ Erreur lors de l’indexation.");
+      }
+    } catch (err) {
+      console.error(err);
+      setPopupMessage("❌ Impossible de contacter le serveur.");
+    }
+
+    // Réinitialise le champ fichier pour permettre de re-sélectionner le même fichier
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setTimeout(() => setPopupMessage(null), 4000);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 🎨 Bandeau en-tête */}
+      {/* En-tête */}
       <div className="relative bg-teal-400 h-52 rounded-b-3xl overflow-visible z-0">
         <svg
           className="absolute top-0 left-0 w-full h-full"
@@ -32,12 +63,12 @@ export default function PatientProfile({ params }: { params: { id: string } }) {
         >
           <path d="M0,0 C600,100 600,0 1200,100 L1200,0 L0,0 Z"></path>
         </svg>
-
+        <div className="absolute top-4 left-6 text-white text-xl font-semibold">
+          Détail du patient
+        </div>
         <div className="absolute top-4 right-6 text-white text-sm">
           👤 <span className="cursor-pointer hover:underline">Sign in</span>
         </div>
-
-        {/* 📌 Carte profil flottante */}
         <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-40px] w-[90%] max-w-5xl bg-white shadow-xl rounded-2xl px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center relative">
@@ -46,10 +77,9 @@ export default function PatientProfile({ params }: { params: { id: string } }) {
             </div>
             <div>
               <h2 className="text-lg font-semibold">{patient.name}</h2>
-              <p className="text-gray-500 text-sm">{patient.email}</p>
+              <p className="text-gray-200 text-sm">{patient.email}</p>
             </div>
           </div>
-
           <div className="flex gap-2">
             <button className="bg-gray-100 px-4 py-1 rounded-full text-sm font-medium hover:bg-gray-200">
               OVERVIEW
@@ -61,10 +91,9 @@ export default function PatientProfile({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {/* 🧩 Section barre de recherche */}
+      {/* Zone de recherche + import */}
       <div className="pt-40 px-6 max-w-5xl mx-auto">
         <div className="bg-white rounded-xl shadow p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Zone gauche */}
           <div className="flex flex-wrap items-center gap-4">
             <input
               type="text"
@@ -75,14 +104,27 @@ export default function PatientProfile({ params }: { params: { id: string } }) {
             <button className="text-gray-600 text-sm hover:text-black">Recently added</button>
             <button className="text-gray-600 text-sm hover:text-black">All docs ⌄</button>
           </div>
-
-          {/* Zone droite */}
           <div>
-            <button className="bg-[#00022E] text-white text-sm px-5 py-2 rounded-lg shadow hover:bg-[#000244]">
+            <button
+              className="bg-[#00022E] text-white text-sm px-5 py-2 rounded-lg shadow hover:bg-[#000244]"
+              onClick={handleImportClick}
+            >
               Import a doc
             </button>
+            <input
+              type="file"
+              accept="application/pdf"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              style={{ display: "none" }}
+            />
           </div>
         </div>
+        {popupMessage && (
+          <div className="mt-4 bg-green-100 text-green-800 text-sm p-3 rounded shadow">
+            {popupMessage}
+          </div>
+        )}
       </div>
     </div>
   );
