@@ -30,7 +30,7 @@ export default function PatientProfile({ params }: { params: Promise<{ id: strin
 
   const fetchResults = async (search: string) => {
     try {
-      const res = await fetch(`/patients-details?query=${encodeURIComponent(search)}`);
+      const res = await fetch(`http://test.com//patients-details?query=${encodeURIComponent(search)}`);
       const data = await res.json();
       setResults(data);
     } catch (error) {
