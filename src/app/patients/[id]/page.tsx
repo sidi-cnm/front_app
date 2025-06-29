@@ -1,5 +1,5 @@
 'use client';
-import React, { useState,useEffect, use } from "react";
+import React, { useState, useEffect, use } from "react";
 import { notFound } from "next/navigation";
 
 const patients = [
@@ -19,6 +19,7 @@ export default function PatientProfile({ params }: { params: Promise<{ id: strin
   const { id } = use(params);
   const patient = patients.find((p) => p.id === id);
   const [query, setQuery] = useState("");
+
   const [results, setResults] = useState([]);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export default function PatientProfile({ params }: { params: Promise<{ id: strin
 
   const fetchResults = async (search: string) => {
     try {
-      const res = await fetch(`http://test.com/patients-details?query=${encodeURIComponent(search)}`);
+      const res = await fetch(`/patients-details?query=${encodeURIComponent(search)}`);
       const data = await res.json();
       setResults(data);
     } catch (error) {
