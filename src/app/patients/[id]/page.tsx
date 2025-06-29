@@ -1,4 +1,5 @@
-import React from "react";
+'use client';
+import React, { useState, useEffect, use } from "react";
 import { notFound } from "next/navigation";
 
 const patients = [
@@ -14,14 +15,33 @@ const patients = [
   },
 ];
 
-export default function PatientProfile({ params }: { params: { id: string } }) {
-  const patient = patients.find((p) => p.id === params.id);
+export default function PatientProfile({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const patient = patients.find((p) => p.id === id);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+
+  useEffect(() => {
+    if (query.trim() !== "") {
+      fetchResults(query);
+    }
+  }, [query]);
+
+  const fetchResults = async (search: string) => {
+    try {
+      const res = await fetch(`http://test.com/patients-details?query=${encodeURIComponent(search)}`);
+      const data = await res.json();
+      setResults(data);
+    } catch (error) {
+      console.error("Failed to fetch patient details:", error);
+    }
+  };
 
   if (!patient) return notFound();
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 🎨 Bandeau en-tête */}
+      {/* 🎨 Header */}
       <div className="relative bg-teal-400 h-52 rounded-b-3xl overflow-visible z-0">
         <svg
           className="absolute top-0 left-0 w-full h-full"
@@ -37,7 +57,7 @@ export default function PatientProfile({ params }: { params: { id: string } }) {
           👤 <span className="cursor-pointer hover:underline">Sign in</span>
         </div>
 
-        {/* 📌 Carte profil flottante */}
+        {/* 📌 Profile card */}
         <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-40px] w-[90%] max-w-5xl bg-white shadow-xl rounded-2xl px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center relative">
@@ -61,13 +81,15 @@ export default function PatientProfile({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {/* 🧩 Section barre de recherche */}
+      {/* 🔍 Search bar */}
       <div className="pt-40 px-6 max-w-5xl mx-auto">
         <div className="bg-white rounded-xl shadow p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Zone gauche */}
+          {/* Left */}
           <div className="flex flex-wrap items-center gap-4">
             <input
               type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="🔍 HTA"
               className="border border-gray-300 rounded-lg px-4 py-2 text-sm w-60 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -76,13 +98,37 @@ export default function PatientProfile({ params }: { params: { id: string } }) {
             <button className="text-gray-600 text-sm hover:text-black">All docs ⌄</button>
           </div>
 
-          {/* Zone droite */}
+          {/* Right */}
           <div>
             <button className="bg-[#00022E] text-white text-sm px-5 py-2 rounded-lg shadow hover:bg-[#000244]">
               Import a doc
             </button>
           </div>
         </div>
+      </div>
+
+      {/* 📝 Search results */}
+      <div className="mt-8 max-w-5xl mx-auto space-y-4 px-6">
+        {results.map((result: any, index: number) => (
+          <div key={index} className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+            <div className="flex-1">
+              <p className="text-sm text-gray-700">{result.text}</p>
+              <div className="mt-2 text-xs text-gray-400">{result.date || "19 / 01 / 2023"}</div>
+            </div>
+            <div className="ml-4 flex flex-col items-end space-y-2">
+              <div className="flex gap-2 items-center">
+                {result.favorite ? (
+                  <span className="text-yellow-400 text-lg">★</span>
+                ) : (
+                  <span className="text-gray-300 text-lg">☆</span>
+                )}
+                <div className="text-sm font-semibold text-red-600">{result.score}%</div>
+              </div>
+              <div className="text-xs text-blue-600 hover:underline cursor-pointer">View document</div>
+              <div className="text-xs text-blue-600 hover:underline cursor-pointer">Download</div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
