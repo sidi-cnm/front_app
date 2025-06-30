@@ -9,19 +9,20 @@ const patients = [
 
 export default function PatientProfile({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const patient = patients.find((p) => p.id === id);
+  console.log("🧱 Component mounted, received id:", id);
+
+  // ✅ Fallback patient for dev/testing
+  const patient = patients.find((p) => p.id === id) ?? { name: "DevUser", email: "dev@example.com" };
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [popupMessage, setPopupMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Charger tous les documents à l'affichage initial
   useEffect(() => {
     fetchAllDocuments();
   }, []);
 
-  // Mettre à jour les résultats lors de la recherche
   useEffect(() => {
     if (query.trim() !== "") {
       fetchResults(query);
@@ -44,13 +45,50 @@ export default function PatientProfile({ params }: { params: Promise<{ id: strin
     }
   };
 
+  const truncateToTwoSentences = (text: string): string => {
+    const sentences = text.match(/[^.!?]+[.!?]/g);
+    return sentences ? sentences.slice(0, 2).join(" ") : text;
+  };
+
   const fetchResults = async (search: string) => {
     try {
-      const res = await fetch(`http://test.com/patients-details?query=${encodeURIComponent(search)}`);
+      console.log("🔍 Searching for:", search);
+
+      const body = {
+        query: search,
+        text_size: 50,
+        vector_size: 50,
+        final_k: 5,
+        weight_text: 1.0,
+        weight_vector: 1.0,
+        detailed: false,
+      };
+
+      const url = `https://34.224.105.165.nip.io/hybrid_search`;
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) throw new Error(`❌ Failed search request with status: ${res.status}`);
+
       const data = await res.json();
-      setResults(data);
+      console.log("✅ Received response data:", data);
+
+      const enriched = (data.results || []).map((doc: any) => ({
+        ...doc,
+        texte_brut: truncateToTwoSentences(doc.summary || doc.texte_brut || ""),
+        date: doc.date || "19 / 01 / 2023",
+        favorite: Math.random() > 0.5,
+        score: Math.floor(Math.random() * 100) + 1,
+      }));
+
+      console.log("🧩 Enriched results to display:", enriched);
+      setResults(enriched);
     } catch (error) {
-      console.error("Erreur fetch recherche :", error);
+      console.error("❌ Erreur fetch recherche :", error);
     }
   };
 
@@ -71,10 +109,7 @@ export default function PatientProfile({ params }: { params: Promise<{ id: strin
 
       await res.json();
       setPopupMessage("✅ Document indexé avec succès !");
-
-      // 🔄 Rafraîchir immédiatement les documents
       await fetchAllDocuments();
-
     } catch (error) {
       console.error("Erreur d'indexation :", error);
       setPopupMessage("❌ Échec lors de l’indexation du document.");
@@ -82,8 +117,6 @@ export default function PatientProfile({ params }: { params: Promise<{ id: strin
 
     setTimeout(() => setPopupMessage(null), 4000);
   };
-
-  if (!patient) return notFound();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -118,7 +151,10 @@ export default function PatientProfile({ params }: { params: Promise<{ id: strin
             <input
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                console.log("⌨️ Typing:", e.target.value);
+                setQuery(e.target.value);
+              }}
               placeholder="🔍 HTA"
               className="border border-gray-300 rounded-lg px-4 py-2 text-sm w-60 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -141,7 +177,7 @@ export default function PatientProfile({ params }: { params: Promise<{ id: strin
       <div className="mt-8 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 px-6">
         {results.map((doc, index) => (
           <div key={index} className="bg-white rounded-lg shadow p-4 flex flex-col justify-between h-44">
-            <p className="text-sm text-gray-700 line-clamp-3">{doc.texte_brut}</p>
+            <p className="text-sm text-gray-700 line-clamp-3">{doc.record.texte_brut}</p>
             <div className="flex justify-between items-end mt-auto pt-4">
               <div><div className="text-xs text-gray-400">{doc.date}</div></div>
               <div className="flex flex-col items-end space-y-1">
