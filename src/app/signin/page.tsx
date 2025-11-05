@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-
+import { useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Apple, Facebook } from "lucide-react";
 import Topbar from "@/components/Topbar";
 
-/* ---------- Fine, lightweight helpers ---------- */
+/* ---------- Decorative Helpers ---------- */
 
 function WaveTexture() {
-  // translucent wave texture that matches the reference banner
   return (
     <svg
       viewBox="0 0 1440 320"
@@ -31,7 +31,6 @@ function WaveTexture() {
 }
 
 function GoogleMark() {
-  // tiny G like in many kits
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
       <path
@@ -54,11 +53,24 @@ function GoogleMark() {
   );
 }
 
-function SocialButton({ children }: { children: React.ReactNode }) {
+function SocialButton({
+  onClick,
+  children,
+  disabled,
+  label,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+  label: string;
+}) {
   return (
     <button
       type="button"
-      className="grid h-10 w-10 place-items-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700 shadow-sm transition hover:bg-white"
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+      className="grid h-10 w-10 place-items-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700 shadow-sm transition hover:bg-white disabled:opacity-50"
     >
       {children}
     </button>
@@ -104,49 +116,80 @@ export default function SignIn() {
   const [pwd, setPwd] = useState("");
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const params = useSearchParams();
+  const callbackUrl = params.get("callbackUrl") || "/dashboard";
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    setErr(null);
     setLoading(true);
-    // TODO: hook to your auth endpoint
-    setTimeout(() => setLoading(false), 800);
+    try {
+      // Let NextAuth perform the navigation.
+      await signIn("credentials", {
+        email,
+        password: pwd,
+        redirect: true,          // 👈 important
+        callbackUrl,             // defaults to /dashboard
+      });
+      // no code runs here on success when redirect:true
+    } catch {
+      setErr("Something went wrong. Please try again.");
+      setLoading(false);
+    }
   }
+
+  // Social sign-in helpers (also redirect)
+  const oauth = (provider: "google" | "apple" | "facebook") => {
+    setErr(null);
+    setLoading(true);
+    signIn(provider, { callbackUrl, redirect: true }).catch(() => {
+      setLoading(false);
+      setErr("Could not start social sign-in.");
+    });
+  };
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Your existing top bar with title + search fits the reference */}
       <Topbar title="" />
 
-      {/* HERO (single element) */}
       <div className="mx-auto mt-6 w-full max-w-5xl px-4 sm:px-6">
         <div className="relative z-0 h-[260px] overflow-hidden rounded-[22px]">
-          {/* solid teal with subtle gradient */}
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 via-teal-400 to-teal-400" />
-          {/* wave texture */}
           <WaveTexture />
-          {/* headline */}
-          {/* headline (nudged up a bit) */}
           <div className="absolute inset-0 grid place-items-center pointer-events-none">
-              <p className="text-[18px] font-medium text-white/95 -translate-y-3 sm:-translate-y-5">
-                  Welcome Back!
-               </p>
+            <p className="text-[18px] font-medium text-white/95 -translate-y-3 sm:-translate-y-5">
+              Welcome Back!
+            </p>
           </div>
-
         </div>
 
-        {/* FLOATING CARD (overlapping hero) */}
+        {/* Floating form card */}
         <div className="-mt-24 sm:-mt-28 lg:-mt-32 grid place-items-center relative z-10">
           <div className="w-[380px] rounded-[18px] bg-white p-6 shadow-[0_20px_50px_rgba(0,0,0,0.12)] ring-1 ring-black/5">
             <p className="text-center text-[11px] text-gray-500">Sign in with</p>
 
             <div className="mt-3 flex items-center justify-center gap-3">
-              <SocialButton>
+              <SocialButton
+                label="Sign in with Facebook"
+                onClick={() => oauth("facebook")}
+                disabled={loading}
+              >
                 <Facebook className="h-4 w-4" />
               </SocialButton>
-              <SocialButton>
+              <SocialButton
+                label="Sign in with Apple"
+                onClick={() => oauth("apple")}
+                disabled={loading}
+              >
                 <Apple className="h-4 w-4" />
               </SocialButton>
-              <SocialButton>
+              <SocialButton
+                label="Sign in with Google"
+                onClick={() => oauth("google")}
+                disabled={loading}
+              >
                 <GoogleMark />
               </SocialButton>
             </div>
@@ -161,6 +204,13 @@ export default function SignIn() {
               </div>
             </div>
 
+            {/* error */}
+            {err && (
+              <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                {err}
+              </div>
+            )}
+
             {/* form */}
             <form onSubmit={submit} className="space-y-3">
               <div>
@@ -172,6 +222,7 @@ export default function SignIn() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full rounded-[10px] border border-gray-200 bg-white px-3.5 py-2.5 text-[13px] text-gray-900 outline-none focus:border-emerald-500"
                   required
+                  autoComplete="email"
                 />
               </div>
               <div>
@@ -183,14 +234,17 @@ export default function SignIn() {
                   onChange={(e) => setPwd(e.target.value)}
                   className="block w-full rounded-[10px] border border-gray-200 bg-white px-3.5 py-2.5 text-[13px] text-gray-900 outline-none focus:border-emerald-500"
                   required
+                  autoComplete="current-password"
                 />
               </div>
 
-              <TinySwitch
-                checked={remember}
-                onChange={setRemember}
-                label="Remember me"
-              />
+              <div className="flex items-center justify-between">
+                <TinySwitch
+                  checked={remember}
+                  onChange={setRemember}
+                  label="Remember me"
+                />
+              </div>
 
               <button
                 type="submit"
@@ -203,7 +257,6 @@ export default function SignIn() {
           </div>
         </div>
 
-        {/* breathe below card */}
         <div className="h-20" />
       </div>
     </main>

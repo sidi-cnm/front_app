@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSession, signOut } from "next-auth/react";
 import Topbar from "@/components/Topbar";
 import { Camera, Mail, User, Phone, MapPin, Save, LogOut, Shield } from "lucide-react";
 
@@ -9,14 +10,16 @@ type Profile = {
   email: string;
   phone?: string;
   address?: string;
+  /** data URL selected in the client; if none we fall back to session.user.image or generated SVG */
   avatarDataUrl?: string | null;
 };
 
 export default function ProfilePage() {
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession(); // "loading" | "authenticated" | "unauthenticated"
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+
   const [p, setP] = useState<Profile>({
     name: "",
     email: "",
@@ -27,24 +30,18 @@ export default function ProfilePage() {
 
   const fileRef = useRef<HTMLInputElement | null>(null);
 
+  // Populate from session when available
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch("/api/auth/me", { cache: "no-store" });
-        const data = await r.json();
-        if (!r.ok || !data?.user) throw new Error("Not authenticated");
-        setP((s) => ({
-          ...s,
-          name: data.user.name ?? "",
-          email: data.user.email ?? "",
-        }));
-      } catch {
-        // if unauth, middleware should redirect; keep page safe
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    if (status === "authenticated" && session?.user) {
+      setP((s) => ({
+        ...s,
+        name: session?.user?.name ?? "",
+        email: session?.user?.email ?? "",
+        // if no local avatarDataUrl, keep null; we'll render session.user.image in the <img> fallback
+        // avatarDataUrl: null
+      }));
+    }
+  }, [status, session]);
 
   function set<K extends keyof Profile>(k: K, v: Profile[K]) {
     setP((s) => ({ ...s, [k]: v }));
@@ -61,10 +58,13 @@ export default function ProfilePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(p),
       });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Save failed");
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body?.error || "Save failed");
+      }
       setOk(true);
     } catch (e: any) {
-      setErr(e.message);
+      setErr(e.message || "Save failed");
     } finally {
       setSaving(false);
     }
@@ -73,6 +73,7 @@ export default function ProfilePage() {
   function onPick() {
     fileRef.current?.click();
   }
+
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -81,12 +82,47 @@ export default function ProfilePage() {
     rd.readAsDataURL(f);
   }
 
-  async function signOut() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/signin";
+  function fallbackAvatarSvg(initial: string) {
+    return (
+      "data:image/svg+xml;utf8," +
+      encodeURIComponent(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='112' height='112'>
+          <rect width='100%' height='100%' rx='56' fill='%23E6F6F4'/>
+          <text x='50%' y='54%' text-anchor='middle' font-family='Arial' font-size='40' fill='%233EC6B7'>${initial}</text>
+        </svg>`
+      )
+    );
   }
 
-  if (loading) return <div className="px-3 sm:px-4 lg:px-6 py-10 text-gray-500">Loading…</div>;
+  function currentAvatarSrc(): string {
+    // Priority: local uploaded data URL -> session image -> generated SVG with initial
+    if (p.avatarDataUrl) return p.avatarDataUrl;
+    const img = session?.user?.image;
+    if (img && typeof img === "string") return img;
+    const initial = (p.name || "U")[0]?.toUpperCase() || "U";
+    return fallbackAvatarSvg(initial);
+  }
+
+  // Sign out via next-auth (kills session cookie) then redirect to sign-in
+  function onSignOut() {
+    signOut({ callbackUrl: "/sign-in" });
+  }
+
+  if (status === "loading") {
+    return (
+      <div className="px-3 sm:px-4 lg:px-6 py-10 text-gray-500">Loading…</div>
+    );
+  }
+
+  // If middleware is in place, unauthenticated users won't reach this page.
+  // But in case middleware isn't active, you can show a simple message:
+  if (status === "unauthenticated") {
+    return (
+      <div className="px-3 sm:px-4 lg:px-6 py-10 text-gray-500">
+        You must be signed in to view this page.
+      </div>
+    );
+  }
 
   return (
     <main className="w-full">
@@ -97,7 +133,7 @@ export default function ProfilePage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <h2 className="text-lg sm:text-xl font-semibold text-[#163B5B]">Your account</h2>
             <div className="flex gap-2">
-              <button type="button" onClick={signOut} className="badge flex items-center gap-1">
+              <button type="button" onClick={onSignOut} className="badge flex items-center gap-1">
                 <LogOut size={16} /> Sign out
               </button>
               <button className="btn flex items-center gap-2" disabled={saving}>
@@ -116,13 +152,7 @@ export default function ProfilePage() {
               <div className="mt-2 card p-4 grid place-items-center gap-3">
                 <div className="relative h-28 w-28">
                   <img
-                    src={
-                      p.avatarDataUrl ||
-                      "data:image/svg+xml;utf8," +
-                        encodeURIComponent(
-                          `<svg xmlns='http://www.w3.org/2000/svg' width='112' height='112'><rect width='100%' height='100%' rx='56' fill='%23E6F6F4'/><text x='50%' y='54%' text-anchor='middle' font-family='Arial' font-size='40' fill='%233EC6B7'>${(p.name||"U")[0]?.toUpperCase()}</text></svg>`
-                        )
-                    }
+                    src={currentAvatarSrc()}
                     alt="avatar"
                     className="h-28 w-28 rounded-full object-cover"
                   />
@@ -187,7 +217,8 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-2 text-gray-600">
                     <Shield size={18} /> Reset your password
                   </div>
-                  <a href="/signin" className="btn">Change password</a>
+                  {/* wire this to your password reset flow if you implement it */}
+                  <a href="/sign-in" className="btn">Change password</a>
                 </div>
               </div>
             </div>
