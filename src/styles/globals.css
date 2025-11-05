@@ -1,0 +1,25 @@
+/* Tailwind v4 */
+@import "tailwindcss";
+
+/* Define your design tokens */
+@theme {
+  --color-brand: #3EC6B7;
+  --color-soft:  #F5F7FB;
+  --color-dark:  #0E1B25;
+
+  /* optional tokens used by your utilities/classes */
+  --shadow-card: 0 10px 25px rgba(16,24,40,.06);
+  --radius-xl2: 1rem;
+}
+
+/* Global styles using Tailwind utilities */
+html, body { @apply bg-soft text-[#213547]; }
+
+/* Utility helpers you used in the UI */
+.btn   { @apply inline-flex items-center justify-center rounded-xl bg-brand text-white px-4 py-2 text-sm font-medium transition hover:opacity-90; }
+.input { @apply w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand; }
+.card  { @apply bg-white rounded-2xl; }
+
+/* Custom utility classes (v4 way) */
+@utility shadow-card { box-shadow: var(--shadow-card); }
+@utility rounded-xl2 { border-radius: var(--radius-xl2); }

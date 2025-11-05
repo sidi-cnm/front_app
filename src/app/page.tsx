@@ -1,10 +1,6 @@
-import Image from "next/image";
+// app/page.tsx
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Bienvenue sur le dashboard</h1>
-      <p>Contenu principal du dashboard ici</p>
-    </div>
-  );
+export default function Root() {
+  redirect("/signin"); // or "/auth/signin" if that’s your path
 }
