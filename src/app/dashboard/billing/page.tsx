@@ -2,14 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Topbar from "@/components/Topbar";
-import {
-  CreditCard,
-  Download,
-  Eye,
-  Plus,
-  CalendarDays,
-  DollarSign,
-} from "lucide-react";
+import { CreditCard, Download, Eye, Plus, CalendarDays, DollarSign } from "lucide-react";
 
 /* --------- tiny helpers --------- */
 
@@ -27,9 +20,7 @@ function Badge({
     gray: "bg-gray-50 text-gray-600 ring-gray-200",
   };
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ring-1 ${map[tone]}`}
-    >
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ring-1 ${map[tone]}`}>
       {children}
     </span>
   );
@@ -43,35 +34,38 @@ type Invoice = {
   period: string;
 };
 
+/* --------- mock data (stable reference) --------- */
+const INVOICES: Invoice[] = [
+  {
+    id: "INV-2025-0042",
+    date: "2025-03-01",
+    amount: 49,
+    status: "paid",
+    period: "Feb 2025",
+  },
+  {
+    id: "INV-2025-0043",
+    date: "2025-04-01",
+    amount: 49,
+    status: "paid",
+    period: "Mar 2025",
+  },
+  {
+    id: "INV-2025-0044",
+    date: "2025-05-01",
+    amount: 49,
+    status: "due",
+    period: "Apr 2025",
+  },
+];
+
 /* --------- page --------- */
 
 export default function BillingPage() {
   const [methodOpen, setMethodOpen] = useState(false);
 
-  // mock invoices (replace with API call)
-  const invoices: Invoice[] = [
-    {
-      id: "INV-2025-0042",
-      date: "2025-03-01",
-      amount: 49,
-      status: "paid",
-      period: "Feb 2025",
-    },
-    {
-      id: "INV-2025-0043",
-      date: "2025-04-01",
-      amount: 49,
-      status: "paid",
-      period: "Mar 2025",
-    },
-    {
-      id: "INV-2025-0044",
-      date: "2025-05-01",
-      amount: 49,
-      status: "due",
-      period: "Apr 2025",
-    },
-  ];
+  // stable reference (no re-creation on each render)
+  const invoices = INVOICES;
 
   const summary = useMemo(() => {
     const next = invoices.find((x) => x.status !== "paid");
@@ -136,8 +130,7 @@ export default function BillingPage() {
                   ${summary.nextInvoice.amount}
                 </div>
                 <div className="mt-1 text-xs text-gray-500">
-                  {new Date(summary.nextInvoice.date).toLocaleDateString()} •{" "}
-                  {summary.nextInvoice.period}
+                  {new Date(summary.nextInvoice.date).toLocaleDateString()} • {summary.nextInvoice.period}
                 </div>
               </>
             ) : (
@@ -178,16 +171,12 @@ export default function BillingPage() {
                   <tr key={inv.id} className="border-b last:border-b-0">
                     <td className="px-4 py-3 font-medium">{inv.id}</td>
                     <td className="px-4 py-3">{inv.period}</td>
-                    <td className="px-4 py-3">
-                      {new Date(inv.date).toLocaleDateString()}
-                    </td>
+                    <td className="px-4 py-3">{new Date(inv.date).toLocaleDateString()}</td>
                     <td className="px-4 py-3">${inv.amount}</td>
                     <td className="px-4 py-3">
                       {inv.status === "paid" && <Badge tone="green">Paid</Badge>}
                       {inv.status === "due" && <Badge tone="amber">Due</Badge>}
-                      {inv.status === "overdue" && (
-                        <Badge tone="red">Overdue</Badge>
-                      )}
+                      {inv.status === "overdue" && <Badge tone="red">Overdue</Badge>}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
@@ -236,15 +225,11 @@ export default function BillingPage() {
                 className="space-y-3"
               >
                 <div>
-                  <label className="mb-1 block text-xs text-gray-500">
-                    Card holder
-                  </label>
+                  <label className="mb-1 block text-xs text-gray-500">Card holder</label>
                   <input className="input w-full" placeholder="Jane Doe" required />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-gray-500">
-                    Card number
-                  </label>
+                  <label className="mb-1 block text-xs text-gray-500">Card number</label>
                   <input
                     className="input w-full"
                     placeholder="4242 4242 4242 4242"
@@ -254,9 +239,7 @@ export default function BillingPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-1 block text-xs text-gray-500">
-                      Expiry (MM/YY)
-                    </label>
+                    <label className="mb-1 block text-xs text-gray-500">Expiry (MM/YY)</label>
                     <input className="input w-full" placeholder="08/27" required />
                   </div>
                   <div>
@@ -266,16 +249,10 @@ export default function BillingPage() {
                 </div>
 
                 <div className="mt-4 flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    className="badge"
-                    onClick={() => setMethodOpen(false)}
-                  >
+                  <button type="button" className="badge" onClick={() => setMethodOpen(false)}>
                     cancel
                   </button>
-                  <button type="submit" className="btn">
-                    Save method
-                  </button>
+                  <button type="submit" className="btn">Save method</button>
                 </div>
               </form>
             </div>

@@ -1,8 +1,6 @@
 // components/ToggleSwitch.tsx
 "use client";
 
-import { useState } from "react";
-
 type ToggleSwitchProps = {
   id: string;
   label: string;
@@ -10,7 +8,12 @@ type ToggleSwitchProps = {
   onChange: (checked: boolean) => void;
 };
 
-export default function ToggleSwitch({ id, label, checked, onChange }: ToggleSwitchProps) {
+export default function ToggleSwitch({
+  id,
+  label,
+  checked,
+  onChange,
+}: ToggleSwitchProps) {
   return (
     <div className="flex items-center space-x-3">
       <label htmlFor={id} className="relative inline-flex items-center cursor-pointer">

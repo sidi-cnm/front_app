@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useSession, signOut } from "next-auth/react";
+import Image from "next/image";
 import Topbar from "@/components/Topbar";
 import { Camera, Mail, User, Phone, MapPin, Save, LogOut, Shield } from "lucide-react";
 
@@ -35,10 +36,8 @@ export default function ProfilePage() {
     if (status === "authenticated" && session?.user) {
       setP((s) => ({
         ...s,
-        name: session?.user?.name ?? "",
-        email: session?.user?.email ?? "",
-        // if no local avatarDataUrl, keep null; we'll render session.user.image in the <img> fallback
-        // avatarDataUrl: null
+        name: session.user?.name ?? "",
+        email: session.user?.email ?? "",
       }));
     }
   }, [status, session]);
@@ -47,7 +46,7 @@ export default function ProfilePage() {
     setP((s) => ({ ...s, [k]: v }));
   }
 
-  async function onSave(e: React.FormEvent) {
+  async function onSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErr(null);
     setOk(false);
@@ -59,12 +58,13 @@ export default function ProfilePage() {
         body: JSON.stringify(p),
       });
       if (!r.ok) {
-        const body = await r.json().catch(() => ({}));
+        const body = (await r.json().catch(() => ({}))) as { error?: string };
         throw new Error(body?.error || "Save failed");
       }
       setOk(true);
-    } catch (e: any) {
-      setErr(e.message || "Save failed");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Save failed";
+      setErr(message);
     } finally {
       setSaving(false);
     }
@@ -74,7 +74,7 @@ export default function ProfilePage() {
     fileRef.current?.click();
   }
 
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function onFileChange(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
     const rd = new FileReader();
@@ -109,13 +109,9 @@ export default function ProfilePage() {
   }
 
   if (status === "loading") {
-    return (
-      <div className="px-3 sm:px-4 lg:px-6 py-10 text-gray-500">Loading…</div>
-    );
+    return <div className="px-3 sm:px-4 lg:px-6 py-10 text-gray-500">Loading…</div>;
   }
 
-  // If middleware is in place, unauthenticated users won't reach this page.
-  // But in case middleware isn't active, you can show a simple message:
   if (status === "unauthenticated") {
     return (
       <div className="px-3 sm:px-4 lg:px-6 py-10 text-gray-500">
@@ -151,9 +147,11 @@ export default function ProfilePage() {
               <label className="text-sm font-medium text-gray-700">Avatar</label>
               <div className="mt-2 card p-4 grid place-items-center gap-3">
                 <div className="relative h-28 w-28">
-                  <img
+                  <Image
                     src={currentAvatarSrc()}
                     alt="avatar"
+                    width={112}
+                    height={112}
                     className="h-28 w-28 rounded-full object-cover"
                   />
                   <button
@@ -184,7 +182,7 @@ export default function ProfilePage() {
                 <input
                   className="input"
                   value={p.name}
-                  onChange={(e) => set("name", e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => set("name", e.target.value)}
                   placeholder="Your name"
                 />
               </Field>
@@ -197,7 +195,7 @@ export default function ProfilePage() {
                 <input
                   className="input"
                   value={p.phone || ""}
-                  onChange={(e) => set("phone", e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => set("phone", e.target.value)}
                   placeholder="e.g. +222..."
                 />
               </Field>
@@ -206,7 +204,7 @@ export default function ProfilePage() {
                 <input
                   className="input"
                   value={p.address || ""}
-                  onChange={(e) => set("address", e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => set("address", e.target.value)}
                   placeholder="City, Country"
                 />
               </Field>
@@ -217,7 +215,6 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-2 text-gray-600">
                     <Shield size={18} /> Reset your password
                   </div>
-                  {/* wire this to your password reset flow if you implement it */}
                   <a href="/sign-in" className="btn">Change password</a>
                 </div>
               </div>
@@ -242,11 +239,7 @@ function Field({
     <div>
       <label className="text-sm font-medium text-gray-700">{label}</label>
       <div className="mt-1 relative">
-        {icon && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-            {icon}
-          </span>
-        )}
+        {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{icon}</span>}
         <div className={icon ? "pl-8" : ""}>{children}</div>
       </div>
     </div>

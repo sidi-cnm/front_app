@@ -1,6 +1,7 @@
-// src/lib/auth.ts
-import type { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions, User } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import type { JWT } from "next-auth/jwt";
+import type { Session } from "next-auth";
 
 type AppUser = {
   id: string;
@@ -27,6 +28,16 @@ const USERS: AppUser[] = [
   },
 ];
 
+// Extend the JWT and Session types to include our custom id/picture fields
+interface AppToken extends JWT {
+  id?: string;
+  picture?: string;
+}
+
+interface AppSession extends Session {
+  user: Session["user"] & { id?: string };
+}
+
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   providers: [
@@ -39,33 +50,48 @@ export const authOptions: NextAuthOptions = {
       async authorize(creds) {
         if (!creds?.email || !creds?.password) return null;
         const user = USERS.find(
-          u => u.email.toLowerCase() === creds.email.toLowerCase() && u.password === creds.password
+          (u) =>
+            u.email.toLowerCase() === creds.email.toLowerCase() &&
+            u.password === creds.password
         );
         if (!user) return null;
 
         // Only safe fields here:
-        return { id: user.id, name: user.name, email: user.email, image: user.image };
+        const safeUser: Omit<AppUser, "password"> = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+        };
+        return safeUser as unknown as User;
       },
     }),
   ],
   pages: {
-    signIn: "/sign-in", // use your custom sign-in page
+    signIn: "/sign-in",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }): Promise<AppToken> {
       if (user) {
-        token.id = user.id;
+        token.id = (user as User).id;
         token.name = user.name;
-        token.picture = user.image;
+        token.picture = (user as User).image;
       }
-      return token;
+      // Ensure picture is string | undefined (convert null -> undefined) and return AppToken
+      const appToken: AppToken = {
+        ...token,
+        picture: token.picture ?? undefined,
+      };
+      return appToken;
     },
-    async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id;
-        session.user.image = (token.picture as string) || session.user.image || undefined;
+    async session({ session, token }): Promise<AppSession> {
+      const s = session as AppSession;
+      if (s.user) {
+        s.user.id = (token as AppToken).id;
+        s.user.image =
+          (token as AppToken).picture || s.user.image || undefined;
       }
-      return session;
+      return s;
     },
   },
 };

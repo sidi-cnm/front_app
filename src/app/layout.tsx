@@ -1,9 +1,8 @@
-// @ts-ignore: Cannot find module or type declarations for side-effect import of '../styles/globals.css'.
-import  "@/styles/globals.css";
-import { ReactNode } from "react";
+// @ts-expect-error: allow side-effect CSS import without type declarations
+import "@/styles/globals.css";
 
 import type { Metadata } from "next";
-import Providers from "./providers"; // wraps SessionProvider (and any future client providers)
+import Providers from "./providers";
 import { SITE_NAME } from "@/lib/site";
 
 export const metadata: Metadata = {

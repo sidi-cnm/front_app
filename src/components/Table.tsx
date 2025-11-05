@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
 
 type Patient = {
@@ -45,7 +46,13 @@ const Table = ({ data }: { data: Patient[] }) => {
                 className="bg-white shadow rounded-lg transition hover:shadow-md"
               >
                 <td className="px-4 py-3 flex items-center gap-3 font-medium text-gray-800">
-                  <img src={p.avatar} alt="avatar" className="w-9 h-9 rounded-full border" />
+                  <Image
+                    src={p.avatar}
+                    alt={`${p.name}'s avatar`}
+                    width={36}
+                    height={36}
+                    className="w-9 h-9 rounded-full border object-cover"
+                  />
                   {p.name}
                 </td>
                 <td className="px-4 py-3 text-gray-600">{p.email}</td>
