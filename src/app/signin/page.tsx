@@ -115,7 +115,7 @@ export default function SignIn() {
   return (
     <main className="min-h-screen bg-white">
       {/* Your existing top bar with title + search fits the reference */}
-      <Topbar title="Sign in" />
+      <Topbar title="" />
 
       {/* HERO (single element) */}
       <div className="mx-auto mt-6 w-full max-w-5xl px-4 sm:px-6">
