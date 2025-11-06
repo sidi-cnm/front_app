@@ -59,8 +59,8 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="[&>tr]:border-t">
                   {[
-                    { n: "Karthi", e: "karthi@gmail.com", v: "08-Dec-2023", id: "p-1" },
-                    { n: "Noura", e: "noura@sanamed.com", v: "07-Dec-2023", id: "p-2" },
+                    { n: "khatu", e: "khatu@sanamed.com", v: "08-Dec-2023", id: "p-1" },
+                    { n: "SidiElvaly", e: "sidielvaly@sanamed.com", v: "07-Dec-2023", id: "p-2" },
                     { n: "Sidi", e: "sidi@sanamed.com", v: "06-Dec-2023", id: "p-3" },
                   ].map((p) => (
                     <tr key={p.id}>
