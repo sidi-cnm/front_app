@@ -1,10 +1,11 @@
 // src/components/Sidebar.tsx
 "use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Receipt, FileText, User, LogOut } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import { LayoutDashboard, Users, Receipt, FileText, User, LogOut, LogIn } from "lucide-react";
 import { SITE_NAME } from "@/lib/site";
-import { signOut } from "next-auth/react";
 
 const items = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -14,12 +15,16 @@ const items = [
   { href: "/dashboard/profile", label: "Profile", icon: User },
 ];
 
+const SIGNIN_PATH = "/signin"; // keep this consistent with authOptions.pages.signIn
+
 export default function Sidebar() {
   const path = usePathname();
+  const { status } = useSession(); // "loading" | "authenticated" | "unauthenticated"
 
   return (
     <aside className="hidden md:flex w-60 flex-col gap-4 p-4">
       <div className="text-xl font-bold text-brand px-2">{SITE_NAME}</div>
+
       <nav className="flex flex-col gap-1">
         {items.map(({ href, label, icon: Icon }) => {
           const active = path.startsWith(href);
@@ -37,14 +42,25 @@ export default function Sidebar() {
           );
         })}
 
-        {/* Sign out button */}
-        <button
-          onClick={() => signOut({ callbackUrl: "/sign-in" })}
-          className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-600 hover:bg-white/70"
-        >
-          <LogOut size={18} />
-          Sign Out
-        </button>
+        {/* Auth control */}
+        {status === "authenticated" ? (
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: SIGNIN_PATH, redirect: true })}
+            className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-600 hover:bg-white/70"
+          >
+            <LogOut size={18} />
+            Sign Out
+          </button>
+        ) : (
+          <Link
+            href={SIGNIN_PATH}
+            className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-600 hover:bg-white/70"
+          >
+            <LogIn size={18} />
+            Sign In
+          </Link>
+        )}
       </nav>
 
       <div className="mt-auto card p-4">

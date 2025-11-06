@@ -8,7 +8,7 @@ type AppUser = {
   name: string;
   email: string;
   image?: string;
-  password: string; // only for demo; store hashed in real apps!
+  password: string; // demo only
 };
 
 const USERS: AppUser[] = [
@@ -28,12 +28,11 @@ const USERS: AppUser[] = [
   },
 ];
 
-// Extend the JWT and Session types to include our custom id/picture fields
+// Extend JWT/Session with our custom fields
 interface AppToken extends JWT {
   id?: string;
   picture?: string;
 }
-
 interface AppSession extends Session {
   user: Session["user"] & { id?: string };
 }
@@ -56,8 +55,7 @@ export const authOptions: NextAuthOptions = {
         );
         if (!user) return null;
 
-        // Only safe fields here:
-        const safeUser: Omit<AppUser, "password"> = {
+        const safeUser: Pick<AppUser, "id" | "name" | "email" | "image"> = {
           id: user.id,
           name: user.name,
           email: user.email,
@@ -68,28 +66,39 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    signIn: "/sign-in",
+    // IMPORTANT: your route folder is /app/signin
+    signIn: "/signin",
+    // optional: surface auth errors on the same page
+    error: "/signin",
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // prevent open redirects
+      try {
+        const u = new URL(url);
+        if (u.origin === baseUrl) return url;
+      } catch {
+        // url is relative
+        if (url.startsWith("/")) return url;
+      }
+      return baseUrl;
+    },
     async jwt({ token, user }): Promise<AppToken> {
       if (user) {
         token.id = (user as User).id;
         token.name = user.name;
         token.picture = (user as User).image;
       }
-      // Ensure picture is string | undefined (convert null -> undefined) and return AppToken
-      const appToken: AppToken = {
+      return {
         ...token,
         picture: token.picture ?? undefined,
       };
-      return appToken;
     },
     async session({ session, token }): Promise<AppSession> {
       const s = session as AppSession;
       if (s.user) {
         s.user.id = (token as AppToken).id;
-        s.user.image =
-          (token as AppToken).picture || s.user.image || undefined;
+        s.user.image = (token as AppToken).picture || s.user.image || undefined;
       }
       return s;
     },
