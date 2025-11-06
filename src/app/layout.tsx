@@ -1,4 +1,3 @@
-// @ts-expect-error: allow side-effect CSS import without type declarations
 import "@/styles/globals.css";
 
 import type { Metadata } from "next";
@@ -23,3 +22,4 @@ export default function RootLayout({
     </html>
   );
 }
+
