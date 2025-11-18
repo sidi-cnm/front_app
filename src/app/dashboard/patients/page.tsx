@@ -13,6 +13,7 @@ import {
   IdCard,
   Plus,
   Search as SearchIcon,
+  Filter,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -29,17 +30,40 @@ function IconButton({
   children: React.ReactNode;
 }) {
   const base =
-    "inline-flex h-9 w-9 items-center justify-center rounded-xl border transition shadow-sm";
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg border transition shadow-sm";
   const styles =
     variant === "primary"
-      ? "border-brand/30 bg-brand/10 text-brand hover:bg-brand/20"
+      ? "border-brand/40 bg-brand/10 text-brand hover:bg-brand/20"
       : variant === "danger"
-      ? "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
-      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50";
+      ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
+      : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50";
   return (
     <button type="button" title={title} onClick={onClick} className={`${base} ${styles}`}>
       {children}
     </button>
+  );
+}
+
+/* Status pill */
+function StatusPill({ value }: { value: string }) {
+  const v = value.toLowerCase();
+  const map =
+    v === "blocked" || v === "inactive"
+      ? {
+          label: value,
+          cls: "bg-rose-50 text-rose-700 border-rose-200",
+        }
+      : {
+          label: value || "Active",
+          cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        };
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-medium ${map.cls}`}
+    >
+      {map.label}
+    </span>
   );
 }
 
@@ -60,119 +84,166 @@ export default function PatientsPage() {
 
   return (
     <main className="w-full">
-      <Topbar title="Patient page" />
+      <Topbar title="Patients" />
 
       <section className="px-3 sm:px-4 lg:px-6">
-        <div className="card p-4 sm:p-6">
-          {/* Search + CTA */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center mb-4">
-            <div className="relative w-full sm:max-w-md">
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                className="input pl-9"
-                placeholder="Search patients..."
-              />
-              <SearchIcon
-                size={16}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
+        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 overflow-hidden">
+          {/* Top green bar (search + filter) */}
+          <div className="bg-brand px-4 py-4 sm:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-base sm:text-lg font-semibold text-white">
+                Patients
+              </div>
+
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                <div className="relative w-full sm:w-72">
+                  <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    className="h-9 w-full rounded-lg border border-white/20 bg-white/10 pl-9 pr-3 text-xs text-white placeholder:text-white/70 outline-none focus:bg-white focus:text-gray-900 focus:placeholder:text-gray-400"
+                    placeholder="Search patients..."
+                  />
+                </div>
+
+                <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-xs font-medium text-white hover:bg-white/25">
+                  <Filter className="h-3.5 w-3.5" />
+                  Filter
+                </button>
+              </div>
             </div>
-            <Link href="/dashboard/patients/new" className="btn self-start sm:self-auto">
-              <Plus size={16} className="mr-2" />
-              New Patient
-            </Link>
           </div>
 
-          <div className="text-sm text-gray-500 mb-2">Patients Table</div>
+          {/* Tabs + actions row (Members only) */}
+          <div className="border-b border-gray-100 px-4 py-3 sm:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <button className="rounded-full bg-brand px-4 py-1.5 text-xs font-medium text-white shadow-sm">
+                  Patients
+                </button>
+              </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-card">
-            <table className="min-w-[820px] w-full">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href="/dashboard/patients/new"
+                  className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-brand/90"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add new
+                </Link>
+                <button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                  Import patients
+                </button>
+                <button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                  Export patients (Excel)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Table section */}
+          <div className="overflow-x-auto px-2 pb-4 pt-2 sm:px-4">
+            <table className="min-w-[860px] w-full border-separate border-spacing-y-2 text-sm">
               <thead>
-                <tr className="bg-soft text-gray-600 text-xs uppercase tracking-wide">
-                  <th className="text-left px-4 py-3">#</th>
-                  <th className="text-left px-4 py-3">Name</th>
-                  <th className="text-left px-4 py-3">Email</th>
-                  <th className="text-left px-4 py-3">Phone</th>
-                  <th className="text-left px-4 py-3">Enroll number</th>
-                  <th className="text-left px-4 py-3">Last Visit</th>
-                  <th className="text-right px-4 py-3">Actions</th>
+                <tr className="text-xs font-medium text-gray-500">
+                  <th className="px-3 py-2 text-left">Patient</th>
+                  <th className="px-3 py-2 text-left">Phone</th>
+                  <th className="px-3 py-2 text-left">Enroll number</th>
+                  <th className="px-3 py-2 text-left">Last visit</th>
+                  <th className="px-3 py-2 text-left">Status</th>
+                  <th className="px-3 py-2 text-center">Operations</th>
                 </tr>
               </thead>
 
-              <tbody className="text-sm">
-                {filtered.map((p, i) => (
-                  <tr
-                    key={p.id}
-                    className="border-t hover:bg-gray-50/70 transition-colors"
-                  >
-                    <td className="px-4 py-3 text-gray-500">{i + 1}</td>
+              <tbody>
+                {filtered.map((p) => {
+                  const status =
+                    "status" in p
+                      ? String((p as { status?: string }).status ?? "Active")
+                      : "Active";
 
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar name={p.name} />
-                        <Link
-                          href={`/dashboard/patients/${p.id}`}
-                          className="text-blue-700 hover:underline font-medium"
-                        >
-                          {p.name}
-                        </Link>
-                      </div>
-                    </td>
+                  return (
+                    <tr
+                      key={p.id}
+                      className="rounded-xl bg-white shadow-[0_4px_12px_rgba(15,23,42,0.06)]"
+                    >
+                      {/* Patient + avatar + email */}
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar name={p.name} />
+                          <div>
+                            <Link
+                              href={`/dashboard/patients/${p.id}`}
+                              className="text-sm font-medium text-slate-900 hover:underline"
+                            >
+                              {p.name}
+                            </Link>
+                            <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
+                              <Mail className="h-3.5 w-3.5 text-gray-400" />
+                              {p.email}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
 
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 text-gray-700">
-                        <Mail size={16} className="text-gray-400" />
-                        {p.email}
-                      </div>
-                    </td>
+                      {/* Phone */}
+                      <td className="px-3 py-3 text-gray-700">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3.5 w-3.5 text-gray-400" />
+                          {p.phone}
+                        </div>
+                      </td>
 
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 text-gray-700">
-                        <Phone size={16} className="text-gray-400" />
-                        {p.phone}
-                      </div>
-                    </td>
+                      {/* Enroll number */}
+                      <td className="px-3 py-3 text-gray-700">
+                        <div className="flex items-center gap-2">
+                          <IdCard className="h-3.5 w-3.5 text-gray-400" />
+                          {p.idnum}
+                        </div>
+                      </td>
 
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 text-gray-700">
-                        <IdCard size={16} className="text-gray-400" />
-                        {p.idnum}
-                      </div>
-                    </td>
+                      {/* Last visit */}
+                      <td className="px-3 py-3 text-gray-700">{p.lastVisit}</td>
 
-                    <td className="px-4 py-3">{p.lastVisit}</td>
+                      {/* Status pill */}
+                      <td className="px-3 py-3">
+                        <StatusPill value={status} />
+                      </td>
 
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-2">
-                        <Link href={`/dashboard/patients/${p.id}`} title="View">
-                          <IconButton title="View">
-                            <Eye size={16} />
+                      {/* Icons only */}
+                      <td className="px-3 py-3">
+                        <div className="flex justify-center gap-2">
+                          <Link href={`/dashboard/patients/${p.id}`} title="View">
+                            <IconButton title="View">
+                              <Eye className="h-3.5 w-3.5" />
+                            </IconButton>
+                          </Link>
+                          <IconButton
+                            title="Edit"
+                            variant="primary"
+                            onClick={() => alert(`Edit ${p.name}`)}
+                          >
+                            <PencilLine className="h-3.5 w-3.5" />
                           </IconButton>
-                        </Link>
-                        <IconButton
-                          title="Edit"
-                          variant="primary"
-                          onClick={() => alert(`Edit ${p.name}`)}
-                        >
-                          <PencilLine size={16} />
-                        </IconButton>
-                        <IconButton
-                          title="Delete"
-                          variant="danger"
-                          onClick={() => handleDelete(p.name)}
-                        >
-                          <Trash2 size={16} />
-                        </IconButton>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <IconButton
+                            title="Delete"
+                            variant="danger"
+                            onClick={() => handleDelete(p.name)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </IconButton>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
 
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-gray-500">
+                    <td
+                      colSpan={6}
+                      className="px-3 py-8 text-center text-sm text-gray-500"
+                    >
                       No patients found.
                     </td>
                   </tr>
@@ -181,12 +252,20 @@ export default function PatientsPage() {
             </table>
           </div>
 
-          {/* Pagination mock (kept simple) */}
-          <div className="flex items-center justify-end gap-2 text-sm text-gray-600 mt-3">
-            <button className="badge">1</button>
-            <button className="badge bg-white">2</button>
-            <button className="badge">3</button>
-            <button className="badge">4</button>
+          {/* Simple pagination mock */}
+          <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-4 py-3 text-xs text-gray-600 sm:px-6">
+            <button className="rounded-full bg-brand px-3 py-1 text-xs font-medium text-white">
+              1
+            </button>
+            <button className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50">
+              2
+            </button>
+            <button className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50">
+              3
+            </button>
+            <button className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50">
+              4
+            </button>
           </div>
         </div>
       </section>

@@ -23,3 +23,8 @@ html, body { @apply bg-soft text-[#213547]; }
 /* Custom utility classes (v4 way) */
 @utility shadow-card { box-shadow: var(--shadow-card); }
 @utility rounded-xl2 { border-radius: var(--radius-xl2); }
+
+/* glassmorphism helpers */
+.glass {
+  @apply backdrop-blur-md bg-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.05)];
+}

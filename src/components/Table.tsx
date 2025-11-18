@@ -1,83 +1,186 @@
-import Image from "next/image";
-import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
+// src/components/Table.tsx
+"use client";
 
-type Patient = {
-  id: number;
+import { FaRegEdit, FaRegTrashAlt } from "react-icons/fa";
+import Image from "next/image";
+
+export type PatientStatus = "active" | "inactive" | "blocked";
+
+export type Patient = {
+  id: number | string;
   name: string;
   email: string;
   phone: string;
   enrollNumber: string;
   lastVisit: string;
   avatar: string;
+  status?: PatientStatus;
 };
 
-const Table = ({ data }: { data: Patient[] }) => {
+function StatusBadge({ status = "active" }: { status?: PatientStatus }) {
+  const map: Record<PatientStatus, { label: string; cls: string }> = {
+    active: {
+      label: "Active",
+      cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    },
+    inactive: {
+      label: "Inactive",
+      cls: "bg-gray-50 text-gray-600 border-gray-200",
+    },
+    blocked: {
+      label: "Blocked",
+      cls: "bg-rose-50 text-rose-700 border-rose-200",
+    },
+  };
+
+  const { label, cls } = map[status];
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm">
-      {/* Top Controls */}
-      <div className="flex justify-between items-center mb-6">
-        <input
-          type="text"
-          placeholder="Search patient..."
-          className="border border-gray-300 px-4 py-2 rounded-md w-1/3 focus:outline-none focus:ring-2 focus:ring-teal-400"
-        />
-        <button className="bg-blue-900 text-white px-5 py-2 rounded-md text-sm hover:bg-blue-800 transition">
-          + New Patient
-        </button>
+    <span
+      className={`inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-medium ${cls}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+export default function Table({ data }: { data: Patient[] }) {
+  return (
+    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+      {/* Top purple bar with search + filter */}
+      <div className="rounded-t-2xl bg-indigo-600 px-6 py-4 text-white">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="text-lg font-semibold">Patients</div>
+          <div className="flex w-full items-center gap-3 md:w-auto">
+            <input
+              type="text"
+              placeholder="Search…"
+              className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm placeholder:text-indigo-100/70 outline-none focus:bg-white focus:text-gray-900 focus:placeholder:text-gray-400"
+            />
+            <button className="rounded-lg bg-white/15 px-4 py-2 text-xs font-medium hover:bg-white/25">
+              Filter
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs + actions */}
+      <div className="border-b border-gray-100 px-6 pb-3 pt-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2">
+            <button className="rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm">
+              Members
+            </button>
+            <button className="rounded-full bg-transparent px-4 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100">
+              Admins
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700">
+              Add new
+            </button>
+            <button className="rounded-lg border border-gray-200 bg-white px-4 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+              Import patients
+            </button>
+            <button className="rounded-lg border border-gray-200 bg-white px-4 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+              Export patients (Excel)
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm text-left border-separate border-spacing-y-2">
-          <thead className="bg-gray-100 text-gray-700 text-sm">
-            <tr>
-              <th className="px-4 py-2">Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Enroll Number</th>
-              <th>Last Visit</th>
-              <th className="text-center">Actions</th>
+      <div className="overflow-x-auto px-4 pb-4 pt-2">
+        <table className="min-w-full border-separate border-spacing-y-2 text-sm">
+          <thead>
+            <tr className="text-xs font-medium text-gray-500">
+              <th className="px-3 py-2 text-left">Patient</th>
+              <th className="px-3 py-2 text-left">Phone</th>
+              <th className="px-3 py-2 text-left">Enroll number</th>
+              <th className="px-3 py-2 text-left">Last visit</th>
+              <th className="px-3 py-2 text-left">Status</th>
+              <th className="px-3 py-2 text-center">Operations</th>
+              <th className="px-3 py-2 text-center">Action</th>
             </tr>
           </thead>
           <tbody>
             {data.map((p) => (
               <tr
                 key={p.id}
-                className="bg-white shadow rounded-lg transition hover:shadow-md"
+                className="rounded-xl bg-white shadow-[0_4px_10px_rgba(15,23,42,0.06)]"
               >
-                <td className="px-4 py-3 flex items-center gap-3 font-medium text-gray-800">
-                  <Image
-                    src={p.avatar}
-                    alt={`${p.name}'s avatar`}
-                    width={36}
-                    height={36}
-                    className="w-9 h-9 rounded-full border object-cover"
-                  />
-                  {p.name}
+                {/* Patient + avatar */}
+                <td className="px-3 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-9 w-9 overflow-hidden rounded-full border border-gray-200">
+                      <Image
+                        src={p.avatar}
+                        alt={p.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">
+                        {p.name}
+                      </div>
+                      <div className="text-xs text-gray-500">{p.email}</div>
+                    </div>
+                  </div>
                 </td>
-                <td className="px-4 py-3 text-gray-600">{p.email}</td>
-                <td className="px-4 py-3 text-gray-600">{p.phone}</td>
-                <td className="px-4 py-3 text-gray-600">{p.enrollNumber}</td>
-                <td className="px-4 py-3 text-gray-600">{p.lastVisit}</td>
-                <td className="px-4 py-3 text-center">
-                  <div className="flex justify-center gap-4 text-lg">
-                    <FaRegEdit
-                      className="cursor-pointer text-orange-500 hover:scale-110 transition"
-                      title="Edit"
-                    />
-                    <FaRegTrashAlt
-                      className="cursor-pointer text-red-500 hover:scale-110 transition"
-                      title="Delete"
-                    />
+
+                <td className="px-3 py-3 text-gray-600">{p.phone}</td>
+                <td className="px-3 py-3 text-gray-600">{p.enrollNumber}</td>
+                <td className="px-3 py-3 text-gray-600">{p.lastVisit}</td>
+
+                <td className="px-3 py-3">
+                  <StatusBadge status={p.status ?? "active"} />
+                </td>
+
+                {/* Icons */}
+                <td className="px-3 py-3">
+                  <div className="flex justify-center gap-3 text-indigo-500">
+                    <button
+                      type="button"
+                      className="rounded-md p-1 hover:bg-indigo-50"
+                    >
+                      <FaRegEdit className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md p-1 hover:bg-rose-50 hover:text-rose-500"
+                    >
+                      <FaRegTrashAlt className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+
+                {/* Login button */}
+                <td className="px-3 py-3">
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      className="rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                    >
+                      Login
+                    </button>
                   </div>
                 </td>
               </tr>
             ))}
+
+            {data.length === 0 && (
+              <tr>
+                <td
+                  colSpan={7}
+                  className="px-3 py-6 text-center text-sm text-gray-500"
+                >
+                  No patients found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
-};
-
-export default Table;
+}
