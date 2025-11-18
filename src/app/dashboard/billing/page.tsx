@@ -14,7 +14,7 @@ import {
 
 type Invoice = {
   id: string;
-  date: string;   // ISO or human
+  date: string; // ISO or human
   amount: number;
   status: "paid" | "due" | "overdue";
   period: string;
@@ -44,7 +44,7 @@ const invoices: Invoice[] = [
   },
 ];
 
-/* Small reusable circular icon button (same idea as in Patients table) */
+/* Small reusable circular icon button */
 function IconButton({
   title,
   children,
@@ -106,9 +106,7 @@ export default function BillingPage() {
               <CalendarDays className="h-4 w-4 text-sky-500" />
             </div>
             <div className="mt-2 text-2xl font-semibold">$49</div>
-            <p className="mt-1 text-xs text-gray-500">
-              01/05/2025 • Apr 2025
-            </p>
+            <p className="mt-1 text-xs text-gray-500">01/05/2025 • Apr 2025</p>
           </div>
 
           {/* payment method – Visa card */}
@@ -158,12 +156,12 @@ export default function BillingPage() {
           </div>
         </div>
 
-        {/* invoice table – same style as Patients table */}
+        {/* invoice table – rows WITHOUT separating borders */}
         <div className="card p-0 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-[720px] w-full">
               <thead>
-                <tr className="bg-soft text-xs uppercase tracking-wide text-gray-500">
+                <tr className="bg-soft text-xs uppercase tracking-wide text-gray-500 border-b border-gray-100">
                   <th className="px-4 py-3 text-left">Invoice</th>
                   <th className="px-4 py-3 text-left">Period</th>
                   <th className="px-4 py-3 text-left">Date</th>
@@ -176,7 +174,7 @@ export default function BillingPage() {
                 {filtered.map((inv) => (
                   <tr
                     key={inv.id}
-                    className="border-t last:border-b-0 hover:bg-gray-50/70 transition-colors"
+                    className="hover:bg-gray-50/70 transition-colors"
                   >
                     <td className="px-4 py-3 font-medium text-gray-800">
                       {inv.id}
