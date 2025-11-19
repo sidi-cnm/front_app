@@ -21,7 +21,7 @@ const USERS: AppUser[] = [
   },
   {
     id: "u-2",
-    name: "Khatu",
+    name: "Khatu Ahmed",
     email: "khatu@gmail.com",
     password: "pass123",
     image: "/images/patients/khatu.jpg",

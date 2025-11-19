@@ -1,19 +1,118 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { Bell, SunMedium, MoonStar } from "lucide-react";
+
 export default function Topbar({ title }: { title: string }) {
+  const { data: session } = useSession();
+  const userName = session?.user?.name ?? "Guest";
+
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const [isDark, setIsDark] = useState(false);
+
+  // Initialize theme from localStorage or system preference
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const root = document.documentElement;
+    const stored = window.localStorage.getItem("theme");
+
+    if (stored === "dark") {
+      root.classList.add("dark");
+      setIsDark(true);
+      return;
+    }
+    if (stored === "light") {
+      root.classList.remove("dark");
+      setIsDark(false);
+      return;
+    }
+
+    const prefersDark = window.matchMedia?.(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+    if (prefersDark) {
+      root.classList.add("dark");
+      setIsDark(true);
+    } else {
+      root.classList.remove("dark");
+      setIsDark(false);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (typeof window === "undefined") return;
+    const root = document.documentElement;
+    const next = !isDark;
+    setIsDark(next);
+    root.classList.toggle("dark", next);
+    window.localStorage.setItem("theme", next ? "dark" : "light");
+  };
+
   return (
-    <header
-      className="
-        sticky top-0 z-30
-        flex items-center justify-between
-        h-14
-        px-4 md:px-6
-        bg-white/90
-        backdrop-blur-sm
-        border-b border-gray-100
-      "
-    >
-      <h1 className="text-xl md:text-2xl font-semibold text-[#1b4d7a]">
-        {title}
-      </h1>
+    <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
+      <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
+        {/* Left side */}
+        <div className="flex flex-1 items-center gap-4 min-w-0">
+          <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
+            <span className="mr-1 h-2 w-2 rounded-full bg-emerald-500" />
+            SANAMED CLINIC
+          </span>
+
+          <div className="min-w-0">
+            <div className="text-[11px] text-slate-400 dark:text-slate-500">
+              Dashboard <span className="mx-1">›</span> {title}
+            </div>
+            <h1 className="truncate text-xl font-semibold text-slate-900 dark:text-slate-50">
+              {title}
+            </h1>
+          </div>
+        </div>
+
+        {/* Right side: theme, notifications, user */}
+        <div className="flex flex-1 items-center justify-end gap-3">
+          {/* Dark-mode toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            {isDark ? <SunMedium size={16} /> : <MoonStar size={16} />}
+          </button>
+
+          {/* Notifications */}
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            <Bell size={16} />
+            <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-[5px] text-[10px] font-semibold text-white">
+              3
+            </span>
+          </button>
+
+          {/* User chip → profile */}
+          <Link
+            href="/dashboard/profile"
+            className="group inline-flex items-center gap-2 rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-medium text-white shadow-md hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-400/30 text-[11px] font-semibold group-hover:bg-emerald-400/50">
+              {initials}
+            </span>
+            <span className="max-w-[140px] truncate text-sm">{userName}</span>
+          </Link>
+        </div>
+      </div>
     </header>
   );
 }
