@@ -15,7 +15,8 @@ import {
   Search as SearchIcon,
   Filter,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import type { ChangeEvent } from "react";
 
 /* Small reusable circular icon button */
 function IconButton({
@@ -70,6 +71,26 @@ function StatusPill({ value }: { value: string }) {
 export default function PatientsPage() {
   const [q, setQ] = useState("");
 
+  // -------- Import patients (file picker) --------
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // TODO: send this file to your backend to import patients
+    console.log("Selected import file:", file);
+    alert(`Selected file: ${file.name}`);
+
+    // reset so the same file can be chosen again
+    e.target.value = "";
+  };
+  // ------------------------------------------------
+
   function handleDelete(name: string) {
     if (confirm(`Delete ${name}? This action cannot be undone.`)) {
       // TODO: call your API to delete
@@ -91,10 +112,6 @@ export default function PatientsPage() {
           {/* Top green bar (search + filter) */}
           <div className="bg-brand px-4 py-4 sm:px-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-base sm:text-lg font-semibold text-white">
-                Patients
-              </div>
-
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                 <div className="relative w-full sm:w-72">
                   <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
@@ -114,15 +131,9 @@ export default function PatientsPage() {
             </div>
           </div>
 
-          {/* Tabs + actions row (Members only) */}
+          {/* Tabs + actions row */}
           <div className="border-b border-gray-100 px-4 py-3 sm:px-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <button className="rounded-full bg-brand px-4 py-1.5 text-xs font-medium text-white shadow-sm">
-                  Patients
-                </button>
-              </div>
-
               <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href="/dashboard/patients/new"
@@ -131,9 +142,23 @@ export default function PatientsPage() {
                   <Plus className="h-3.5 w-3.5" />
                   Add new
                 </Link>
-                <button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+
+                {/* IMPORT PATIENTS BUTTON + HIDDEN INPUT */}
+                <button
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  type="button"
+                  onClick={handleImportClick}
+                >
                   Import patients
                 </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  onChange={handleImportChange}
+                />
+
                 <button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
                   Export patients (Excel)
                 </button>

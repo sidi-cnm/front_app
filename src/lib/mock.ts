@@ -1,7 +1,10 @@
 // src/lib/mock.ts
 import type { Patient } from "@/types/patient";
 
-// --- Patients (your updated list with distinct names) ---
+/* ------------------------------------------------------------------ */
+/* Patients                                                           */
+/* ------------------------------------------------------------------ */
+
 export const patients: Patient[] = [
   {
     id: "p-1",
@@ -23,7 +26,7 @@ export const patients: Patient[] = [
   },
   {
     id: "p-3",
-    name: "Khadija Ahmed",
+    name: "Khadija",
     email: "khadija.ahmed@example.com",
     phone: "222 66 77 88",
     idnum: "SN-2023-0003",
@@ -95,7 +98,10 @@ export const patients: Patient[] = [
   },
 ];
 
-// --- Docs & suggestions used by profile/search UIs ---
+/* ------------------------------------------------------------------ */
+/* Global docs (for search / overview)                                */
+/* ------------------------------------------------------------------ */
+
 export type Doc = {
   id: string;
   title: string;
@@ -128,3 +134,40 @@ export const docs: Doc[] = [
 ];
 
 export const suggestions = ["HTA", "Diabète", "Cholestérol", "Asthme"];
+
+/* ------------------------------------------------------------------ */
+/* Per-patient documents (used by Patient Profile)                     */
+/* ------------------------------------------------------------------ */
+
+export type PatientDoc = {
+  id: string;
+  patientId: string;        // links doc to a patient.id (e.g. "p-1")
+  title: string;
+  date: string;             // display date
+  isFavorite?: boolean;
+};
+
+export const patientDocs: PatientDoc[] = [
+  {
+    id: "pd-1",
+    patientId: "p-1",
+    title:
+      "Les symptômes de l’hypertension artérielle peuvent être des maux de tête, des vertiges, des bourdonnements d’oreille, des troubles de la vision.",
+    date: "19 / 01 / 2023",
+    isFavorite: true,
+  },
+  {
+    id: "pd-2",
+    patientId: "p-1",
+    title:
+      "Bilan sanguin – suivi diabète de type 2 et contrôle de la glycémie.",
+    date: "22 / 02 / 2023",
+  },
+  {
+    id: "pd-3",
+    patientId: "p-4",
+    title:
+      "Compte-rendu d’IRM cérébrale – recherche de lésions ischémiques.",
+    date: "05 / 03 / 2023",
+  },
+];

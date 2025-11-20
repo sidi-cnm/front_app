@@ -1,247 +1,255 @@
+// src/app/dashboard/profile/page.tsx
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, useRef, useEffect, FormEvent } from "react";
 import { useSession, signOut } from "next-auth/react";
-import Image from "next/image";
 import Topbar from "@/components/Topbar";
-import { Camera, Mail, User, Phone, MapPin, Save, LogOut, Shield } from "lucide-react";
-
-type Profile = {
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  /** data URL selected in the client; if none we fall back to session.user.image or generated SVG */
-  avatarDataUrl?: string | null;
-};
+import {
+  Camera,
+  LogOut,
+  MapPin,
+  Mail,
+  Phone,
+  ShieldCheck,
+  User2,
+} from "lucide-react";
 
 export default function ProfilePage() {
-  const { data: session, status } = useSession(); // "loading" | "authenticated" | "unauthenticated"
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [ok, setOk] = useState(false);
+  const { data: session } = useSession();
 
-  const [p, setP] = useState<Profile>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    avatarDataUrl: null,
-  });
+  const initialName = session?.user?.name ?? "";
+  const initialEmail = session?.user?.email ?? "";
+  const [fullName, setFullName] = useState(initialName);
+  const [email] = useState(initialEmail);
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
 
-  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Populate from session when available
   useEffect(() => {
-    if (status === "authenticated" && session?.user) {
-      setP((s) => ({
-        ...s,
-        name: session.user?.name ?? "",
-        email: session.user?.email ?? "",
-      }));
-    }
-  }, [status, session]);
+    setFullName(initialName);
+  }, [initialName]);
 
-  function set<K extends keyof Profile>(k: K, v: Profile[K]) {
-    setP((s) => ({ ...s, [k]: v }));
-  }
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
 
-  async function onSave(e: FormEvent<HTMLFormElement>) {
+  const handleAvatarChange: React.ChangeEventHandler<HTMLInputElement> = (
+    e
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setAvatarPreview(url);
+  };
+
+  const handleSave = (e: FormEvent) => {
     e.preventDefault();
-    setErr(null);
-    setOk(false);
-    try {
-      setSaving(true);
-      const r = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(p),
-      });
-      if (!r.ok) {
-        const body = (await r.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body?.error || "Save failed");
-      }
-      setOk(true);
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Save failed";
-      setErr(message);
-    } finally {
-      setSaving(false);
-    }
-  }
+    // TODO: call your API to persist the profile
+    alert("Profile saved (demo). Implement API call here.");
+  };
 
-  function onPick() {
-    fileRef.current?.click();
-  }
-
-  function onFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const rd = new FileReader();
-    rd.onload = () => set("avatarDataUrl", String(rd.result || ""));
-    rd.readAsDataURL(f);
-  }
-
-  function fallbackAvatarSvg(initial: string) {
-    return (
-      "data:image/svg+xml;utf8," +
-      encodeURIComponent(
-        `<svg xmlns='http://www.w3.org/2000/svg' width='112' height='112'>
-          <rect width='100%' height='100%' rx='56' fill='%23E6F6F4'/>
-          <text x='50%' y='54%' text-anchor='middle' font-family='Arial' font-size='40' fill='%233EC6B7'>${initial}</text>
-        </svg>`
-      )
-    );
-  }
-
-  function currentAvatarSrc(): string {
-    // Priority: local uploaded data URL -> session image -> generated SVG with initial
-    if (p.avatarDataUrl) return p.avatarDataUrl;
-    const img = session?.user?.image;
-    if (img && typeof img === "string") return img;
-    const initial = (p.name || "U")[0]?.toUpperCase() || "U";
-    return fallbackAvatarSvg(initial);
-  }
-
-  // Sign out via next-auth (kills session cookie) then redirect to sign-in
-  function onSignOut() {
-    signOut({ callbackUrl: "/sign-in" });
-  }
-
-  if (status === "loading") {
-    return <div className="px-3 sm:px-4 lg:px-6 py-10 text-gray-500">Loading…</div>;
-  }
-
-  if (status === "unauthenticated") {
-    return (
-      <div className="px-3 sm:px-4 lg:px-6 py-10 text-gray-500">
-        You must be signed in to view this page.
-      </div>
-    );
-  }
+  const handleSignOut = () =>
+    signOut({ callbackUrl: "/signin", redirect: true });
 
   return (
     <main className="w-full">
       <Topbar title="Profile" />
 
-      <section className="px-3 sm:px-4 lg:px-6">
-        <form onSubmit={onSave} className="card p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <h2 className="text-lg sm:text-xl font-semibold text-[#163B5B]">Your account</h2>
-            <div className="flex gap-2">
-              <button type="button" onClick={onSignOut} className="badge flex items-center gap-1">
-                <LogOut size={16} /> Sign out
-              </button>
-              <button className="btn flex items-center gap-2" disabled={saving}>
-                <Save size={16} /> {saving ? "Saving..." : "Save changes"}
-              </button>
-            </div>
-          </div>
-
-          {err && <p className="text-sm text-red-600 mb-2">{err}</p>}
-          {ok && <p className="text-sm text-green-600 mb-2">Saved ✔</p>}
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left: avatar */}
+      <section className="px-3 pb-10 pt-4 sm:px-4 lg:px-6">
+        {/* Shell card */}
+        <div className="card overflow-hidden border border-slate-100 shadow-card">
+          {/* Sub-header */}
+          <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-cyan-50 to-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <label className="text-sm font-medium text-gray-700">Avatar</label>
-              <div className="mt-2 card p-4 grid place-items-center gap-3">
-                <div className="relative h-28 w-28">
-                  <Image
-                    src={currentAvatarSrc()}
-                    alt="avatar"
-                    width={112}
-                    height={112}
-                    className="h-28 w-28 rounded-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={onPick}
-                    className="absolute -bottom-2 -right-2 btn px-2 py-2 rounded-full"
-                    title="Change photo"
-                  >
-                    <Camera size={16} />
-                  </button>
-                </div>
-                <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFileChange} />
-                {p.avatarDataUrl && (
-                  <button
-                    type="button"
-                    className="badge"
-                    onClick={() => set("avatarDataUrl", null)}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Your account
+              </h2>
+              <p className="text-xs text-slate-500">
+                Manage your personal information and security settings.
+              </p>
             </div>
 
-            {/* Right: fields */}
-            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Full name" icon={<User size={16} />}>
-                <input
-                  className="input"
-                  value={p.name}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => set("name", e.target.value)}
-                  placeholder="Your name"
-                />
-              </Field>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Sign out
+              </button>
 
-              <Field label="Email" icon={<Mail size={16} />}>
-                <input className="input bg-gray-50" value={p.email} readOnly />
-              </Field>
-
-              <Field label="Phone" icon={<Phone size={16} />}>
-                <input
-                  className="input"
-                  value={p.phone || ""}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => set("phone", e.target.value)}
-                  placeholder="e.g. +222..."
-                />
-              </Field>
-
-              <Field label="Address" icon={<MapPin size={16} />}>
-                <input
-                  className="input"
-                  value={p.address || ""}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => set("address", e.target.value)}
-                  placeholder="City, Country"
-                />
-              </Field>
-
-              <div className="sm:col-span-2">
-                <label className="text-sm font-medium text-gray-700">Security</label>
-                <div className="mt-2 card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Shield size={18} /> Reset your password
-                  </div>
-                  <a href="/sign-in" className="btn">Change password</a>
-                </div>
-              </div>
+              <button
+                type="submit"
+                form="profile-form"
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-white shadow-md hover:bg-emerald-600"
+              >
+                Save changes
+              </button>
             </div>
           </div>
-        </form>
+
+          {/* Content */}
+          <form
+            id="profile-form"
+            onSubmit={handleSave}
+            className="grid gap-8 px-6 py-6 lg:grid-cols-[260px,1fr]"
+          >
+            {/* Left: avatar card */}
+            <div className="flex flex-col items-center border-b border-slate-100 pb-6 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6">
+              <div
+                className="relative mb-4 flex h-32 w-32 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400 text-4xl font-semibold text-white shadow-md"
+                onClick={handleAvatarClick}
+              >
+                {avatarPreview ? (
+                  <img
+                    src={avatarPreview}
+                    alt="Avatar preview"
+                    className="h-full w-full rounded-full object-cover"
+                  />
+                ) : (
+                  (fullName || "SE")
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                )}
+
+                <span className="absolute bottom-1 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-white text-emerald-500 shadow">
+                  <Camera className="h-4 w-4" />
+                </span>
+              </div>
+              <p className="mb-1 text-sm font-medium text-slate-900">
+                Profile picture
+              </p>
+              <p className="text-[11px] text-slate-500 text-center">
+                JPG, PNG up to 2 MB. Click the avatar to upload a new photo.
+              </p>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </div>
+
+            {/* Right: form fields */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Full name */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-600">
+                  Full name
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-300">
+                    <User2 className="h-4 w-4" />
+                  </span>
+                  <input
+                    type="text"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Your full name"
+                  />
+                </div>
+              </div>
+
+              {/* Email (read-only) */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-600">
+                  Email
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-300">
+                    <Mail className="h-4 w-4" />
+                  </span>
+                  <input
+                    type="email"
+                    value={email}
+                    readOnly
+                    className="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-500 shadow-sm outline-none"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Your login email can be changed by the administrator.
+                </p>
+              </div>
+
+              {/* Phone */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-600">
+                  Phone
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-300">
+                    <Phone className="h-4 w-4" />
+                  </span>
+                  <input
+                    type="tel"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    placeholder="e.g. +222..."
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-600">
+                  Address
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-300">
+                    <MapPin className="h-4 w-4" />
+                  </span>
+                  <input
+                    type="text"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    placeholder="City, Country"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Security card (spans 2 columns) */}
+              <div className="col-span-full">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 sm:flex sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-1 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                      <ShieldCheck className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        Security
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Keep your account protected by using a strong,
+                        unique password.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      alert("Redirect to password change flow (to implement).")
+                    }
+                    className="mt-3 inline-flex items-center justify-center rounded-full bg-white px-4 py-1.5 text-xs font-medium text-emerald-600 shadow-sm hover:bg-emerald-50 sm:mt-0"
+                  >
+                    Change password
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
       </section>
     </main>
-  );
-}
-
-function Field({
-  label,
-  icon,
-  children,
-}: {
-  label: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="text-sm font-medium text-gray-700">{label}</label>
-      <div className="mt-1 relative">
-        {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{icon}</span>}
-        <div className={icon ? "pl-8" : ""}>{children}</div>
-      </div>
-    </div>
   );
 }

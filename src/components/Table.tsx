@@ -66,14 +66,7 @@ export default function Table({ data }: { data: Patient[] }) {
       {/* Tabs + actions */}
       <div className="border-b border-gray-100 px-6 pb-3 pt-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2">
-            <button className="rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm">
-              Members
-            </button>
-            <button className="rounded-full bg-transparent px-4 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100">
-              Admins
-            </button>
-          </div>
+         
           <div className="flex flex-wrap items-center gap-2">
             <button className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700">
               Add new

@@ -1,364 +1,329 @@
+// src/app/dashboard/patients/[id]/page.tsx
 "use client";
 
+import { useRef, useState, use as usePromise } from "react";
 import Topbar from "@/components/Topbar";
-import HeroWave from "@/components/HeroWave";
-import Avatar from "@/components/Avatar";
-import { docs, suggestions } from "@/lib/mock";
-import { use, useMemo, useRef, useState } from "react";
-import {
-  Upload,
-  Star,
-  StarOff,
-  Eye,
-  LayoutDashboard,
-  Settings as Cog,
-} from "lucide-react";
-
-import PatientOverview from "@/components/Overview";
-import PatientSetting from "@/components/Settings";
+import { patients, patientDocs } from "@/lib/mock";
 import type { Patient } from "@/types/patient";
+import type { PatientDoc } from "@/lib/mock";
+import { FileText, Star, StarOff, UploadCloud } from "lucide-react";
 
-function Score({ v }: { v: number }) {
-  const color = v >= 70 ? "bg-green-500" : v >= 40 ? "bg-orange-400" : "bg-red-500";
+/* ----------------- Helpers: patient meta with fallbacks -------------- */
+
+function buildPatientMeta(p: Patient) {
+  type PatientWithOptional = Patient & {
+    dob?: string;
+    registrationDate?: string;
+    lastVisit?: string;
+    address?: string;
+    allergies?: string;
+    chronicDiseases?: string;
+    bloodType?: string;
+    pastIllnesses?: string;
+  };
+
+  const src = p as PatientWithOptional;
+
+  return {
+    dob: src.dob ?? "23.07.1994",
+    registrationDate: src.registrationDate ?? src.lastVisit ?? "12 May 2022",
+    address: src.address ?? "Nouakchott, Mauritania",
+    allergies: src.allergies ?? "None reported",
+    chronicDiseases: src.chronicDiseases ?? "Hypertension",
+    bloodType: src.bloodType ?? "O+",
+    pastIllnesses: src.pastIllnesses ?? "COVID-19 (2022)",
+  };
+}
+
+/* -------------------------- Documents panel ------------------------- */
+
+function DocumentsPanel({ docs }: { docs: PatientDoc[] }) {
+  const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<"all" | "favorite" | "recent">("recent");
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleImportClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = (
+    event
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    console.log("Selected file:", file);
+    alert(`Selected file: ${file.name}`);
+    event.target.value = "";
+  };
+
+  const filtered = docs
+    .filter((d) =>
+      d.title.toLowerCase().includes(query.trim().toLowerCase())
+    )
+    .filter((d, idx) => {
+      if (tab === "favorite") return d.isFavorite;
+      if (tab === "recent") return idx < 4;
+      return true;
+    });
+
   return (
-    <div className="mt-2">
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-        <div className={`h-full ${color}`} style={{ width: `${v}%` }} />
+    <section className="mt-8">
+      {/* Header */}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">
+            Documents
+          </h2>
+          <p className="text-xs text-slate-500">
+            Upload and manage medical documents associated with this patient.
+          </p>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            onClick={handleImportClick}
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:bg-emerald-600"
+          >
+            <UploadCloud className="h-4 w-4" />
+            Import a doc
+          </button>
+
+          {/* hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+        </div>
       </div>
-      <div className="text-xs text-gray-500 mt-1">{v}%</div>
-    </div>
+
+      {/* Tabs (left) + search (right) */}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Tabs LEFT */}
+        <div className="inline-flex rounded-full bg-slate-100 p-1 text-xs font-medium text-slate-500">
+          <button
+            type="button"
+            onClick={() => setTab("favorite")}
+            className={
+              "rounded-full px-3 py-1 transition " +
+              (tab === "favorite"
+                ? "bg-white text-emerald-600 shadow-sm"
+                : "hover:text-slate-700")
+            }
+          >
+            Favorite
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("recent")}
+            className={
+              "rounded-full px-3 py-1 transition " +
+              (tab === "recent"
+                ? "bg-white text-emerald-600 shadow-sm"
+                : "hover:text-slate-700")
+            }
+          >
+            Recently added
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("all")}
+            className={
+              "rounded-full px-3 py-1 transition " +
+              (tab === "all"
+                ? "bg-white text-emerald-600 shadow-sm"
+                : "hover:text-slate-700")
+            }
+          >
+            All docs
+          </button>
+        </div>
+
+        {/* Search RIGHT */}
+        <div className="relative w-full sm:max-w-xs">
+          <input
+            className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+            placeholder="Search in documents…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Cards grid */}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {filtered.map((doc) => (
+          <article
+            key={doc.id}
+            className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md"
+          >
+            <div className="flex items-start gap-2">
+              <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500">
+                <FileText className="h-4 w-4" />
+              </span>
+              <p className="text-xs leading-snug text-slate-700 line-clamp-4">
+                {doc.title}
+              </p>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400">
+              <span>{doc.date}</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => alert("TODO: open document preview")}
+                  className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100"
+                >
+                  View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => alert("TODO: toggle favorite")}
+                  className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-slate-100"
+                >
+                  {doc.isFavorite ? (
+                    <Star className="h-3.5 w-3.5 text-amber-400" />
+                  ) : (
+                    <StarOff className="h-3.5 w-3.5 text-slate-300" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </article>
+        ))}
+
+        {filtered.length === 0 && (
+          <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+            No documents match your filters.
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
-type RouteParams = { id: string };
+/* ---------------------------- Page component ---------------------------- */
 
-export default function PatientProfile({
+export default function PatientProfilePage({
   params,
 }: {
-  params: Promise<RouteParams>;
+  params: Promise<{ id: string }>;
 }) {
-  // Unwrap the new Promise-based params
-  const { id } = use(params);
+  // Next.js 15: params is a Promise
+  const { id } = usePromise(params);
 
-  const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
+  const patient = patients.find(
+    (p) => String(p.id) === id
+  ) as Patient | undefined;
 
-  // tabs: show nothing until user clicks
-  type Tab = "overview" | "setting" | null;
-  const [active, setActive] = useState<Tab>(null);
+  if (!patient) {
+    return (
+      <main className="w-full">
+        <Topbar title="Patient Profile" />
+        <div className="px-4 py-6 text-sm text-red-600">
+          Patient not found.
+        </div>
+      </main>
+    );
+  }
 
-  const [showResults, setShowResults] = useState(false);
+  const initials = patient.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
-  const fileRef = useRef<HTMLInputElement | null>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const meta = buildPatientMeta(patient);
 
-  // ---- mock patient (replace with API fetch) ----
-  const patient: Patient = {
-    id, // <-- use the unwrapped id
-    name: "Karthi",
-    email: "karthi@gmail.com",
-    phone: "7524547760",
-    enrollNumber: "1234567894577760",
-    gender: "male",
-    dob: "1995-03-15",
-    address: "Nouakchott, Mauritania",
-    lastVisit: "2023-12-08",
-    allergies: ["Penicillin"],
-    conditions: ["HTA"],
-    meds: ["Amlodipine 5mg"],
-    stats: { docs: 12, favorites: 3, lastScore: 86 },
-    vitals: { height: 175, weight: 74, bmi: 24.2, bp: "120/80", hr: 72 },
-  };
-  // ------------------------------------------------
-
-  const filtered = useMemo(
-    () => docs.filter((d) => d.title.toLowerCase().includes(q.toLowerCase())),
-    [q]
+  // Docs for this specific patient
+  const docsForPatient = patientDocs.filter(
+    (d) => d.patientId === patient.id
   );
-
-  function openPicker() {
-    fileRef.current?.click();
-  }
-  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0] || null;
-    setFile(f);
-  }
 
   return (
     <main className="w-full">
-      <Topbar title="Patient profile" />
+      <Topbar title="Patient Profile" />
 
-      <section className="px-3 sm:px-4 lg:px-6">
-        <div className="card p-0 overflow-hidden">
-          {/* ===== Hero + identity overlay ===== */}
-          <div className="relative">
-            <HeroWave />
-            <div className="absolute left-0 right-0 -bottom-8 px-3 sm:px-6">
-              <div className="mx-auto w-full max-w-none sm:max-w-[92%] card px-4 py-3 sm:px-6 sm:py-4 flex items-center gap-3 sm:gap-4 relative">
-                <Avatar name={patient.name} />
-                <div className="min-w-0">
-                  <h2
-                    className="font-semibold text-xl sm:text-2xl text-[#163B5B] leading-tight truncate"
-                    title={patient.name}
-                  >
-                    {patient.name}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-gray-500 truncate">
-                    {patient.email}
-                  </p>
-                </div>
-
-                {/* ICON TABS pinned to top-right (desktop) */}
-                <div className="absolute right-2 top-2 z-20 hidden sm:flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setActive("overview")}
-                    title="Overview"
-                    aria-label="Overview"
-                    className={`h-9 w-9 grid place-items-center rounded-full ring-1 ring-black/10 shadow-sm 
-                                backdrop-blur bg-white/90 hover:bg-blue-600 hover:text-white
-                                ${active === "overview" ? "bg-blue-600 text-white" : "text-gray-700"}`}
-                  >
-                    <LayoutDashboard size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActive("setting")}
-                    title="Settings"
-                    aria-label="Settings"
-                    className={`h-9 w-9 grid place-items-center rounded-full ring-1 ring-black/10 shadow-sm 
-                                backdrop-blur bg-white/90 hover:bg-blue-600 hover:text-white
-                                ${active === "setting" ? "bg-blue-600 text-white" : "text-gray-700"}`}
-                  >
-                    <Cog size={18} />
-                  </button>
-                </div>
-              </div>
+      <section className="px-3 pb-8 pt-4 sm:px-4 lg:px-6">
+        {/* Top 3 cards: identity, general info, anamnesis */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          {/* Identity card */}
+          <div className="card flex flex-col items-center px-6 py-8 text-center">
+            <div className="mb-4 flex h-28 w-28 items-center justify-center rounded-full bg-emerald-50 text-3xl font-semibold text-emerald-600">
+              {initials}
             </div>
-          </div>
-          {/* spacer under overlay */}
-          <div className="h-10 sm:h-12" />
+            <h2 className="text-lg font-semibold text-slate-900">
+              {patient.name}
+            </h2>
 
-          <div className="px-3 sm:px-6 pb-5">
-            {/* ===== Search + actions ===== */}
-            <div className="mt-2 flex flex-col sm:flex-row gap-2 sm:items-center">
-              <div className="relative w-full sm:max-w-sm">
-                <input
-                  className="input"
-                  placeholder="HTA"
-                  value={q}
-                  onChange={(e) => {
-                    setQ(e.target.value);
-                    setShowResults(true);
-                  }}
-                />
-                {showResults && q && (
-                  <div className="absolute z-20 mt-1 w-full rounded-xl border bg-white shadow-card">
-                    {suggestions.map((s, i) => (
-                      <button
-                        key={i}
-                        className="block w-full text-left px-3 py-2 text-sm hover:bg-soft"
-                        onClick={() => {
-                          setQ(s);
-                          setShowResults(false);
-                        }}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* hidden file input + trigger button */}
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".pdf,.doc,.docx,image/*"
-                hidden
-                onChange={onPick}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(true);
-                  openPicker();
-                }}
-                className="btn w-full sm:w-auto"
-              >
-                <Upload size={16} className="mr-2" /> Import a doc
-              </button>
-            </div>
-
-            {/* ===== TAB CONTENT (Overview / Setting) ===== */}
-            <div className="mt-4">
-              {active === "overview" && <PatientOverview patient={patient} />}
-              {active === "setting" && <PatientSetting initial={patient} />}
-
-              {active === null && (
-                <div className="text-sm text-gray-500">
-                  Select <span className="font-medium">Overview</span> or{" "}
-                  <span className="font-medium">Settings</span> in the top-right.
-                </div>
-              )}
-            </div>
-
-            {/* ===== Your existing cards / search results below (optional) ===== */}
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(q ? filtered : docs).map((d) => (
-                <div key={d.id} className="card p-4">
-                  <div className="text-sm text-gray-500">{d.date}</div>
-                  <div className="font-medium mt-1 line-clamp-2">{d.title}</div>
-                  <p className="text-sm text-gray-600 mt-2 line-clamp-3">
-                    {d.snippet}
-                  </p>
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="badge">
-                      {d.recent ? "Recently added" : "Favorite"}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {d.fav ? (
-                        <Star className="text-yellow-500" size={16} />
-                      ) : (
-                        <StarOff size={16} className="text-gray-400" />
-                      )}
-                      <a
-                        className="badge"
-                        href={`#view-${d.id}`}
-                        onClick={() => setShowResults(true)}
-                      >
-                        <Eye size={14} /> view
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {q && (
-              <div className="mt-6">
-                <h3 className="text-gray-500 text-sm mb-2">Search result</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filtered.map((d) => (
-                    <div key={d.id} className="card p-4">
-                      <div className="text-sm text-gray-500">{d.date}</div>
-                      <div className="mt-1">
-                        <span className="text-gray-500 text-sm">
-                          Les symptômes de{" "}
-                        </span>
-                        <span className="text-red-500 font-medium">
-                          l’hypertension artérielle
-                        </span>
-                        <span className="text-gray-500 text-sm">
-                          {" "}
-                          peuvent être...
-                        </span>
-                      </div>
-                      <Score v={d.score} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <p className="mt-1 text-xs text-slate-500">{patient.email}</p>
+            {patient.phone && (
+              <p className="mt-1 text-xs text-slate-500">{patient.phone}</p>
             )}
+
+            {patient.idnum && (
+              <p className="mt-4 text-xs font-medium text-slate-400">
+                Enroll number: {patient.idnum}
+              </p>
+            )}
+          </div>
+
+          {/* General information */}
+          <div className="card px-6 py-6">
+            <h3 className="mb-4 text-sm font-semibold text-slate-800">
+              General Information
+            </h3>
+            <dl className="grid grid-cols-1 gap-x-4 gap-y-3 text-xs text-slate-600 sm:grid-cols-2">
+              <div>
+                <dt className="text-slate-400">Date of birth</dt>
+                <dd className="font-medium">{meta.dob}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-400">Registration date</dt>
+                <dd className="font-medium">{meta.registrationDate}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-slate-400">Address</dt>
+                <dd className="font-medium">{meta.address}</dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Anamnesis */}
+          <div className="card px-6 py-6">
+            <h3 className="mb-4 text-sm font-semibold text-slate-800">
+              Anamnesis
+            </h3>
+            <dl className="grid grid-cols-1 gap-y-3 text-xs text-slate-600">
+              <div>
+                <dt className="text-slate-400">Allergies</dt>
+                <dd className="font-medium">{meta.allergies}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-400">Chronic diseases</dt>
+                <dd className="font-medium">{meta.chronicDiseases}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-400">Blood type</dt>
+                <dd className="font-medium">{meta.bloodType}</dd>
+              </div>
+              <div>
+                <dt className="text-slate-400">Past illnesses</dt>
+                <dd className="font-medium">{meta.pastIllnesses}</dd>
+              </div>
+            </dl>
           </div>
         </div>
 
-        {/* ===== Split view (kept from your original) ===== */}
-        {q && filtered[0] && (
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="card p-4">
-              <div className="text-sm text-gray-500 mb-2">Search result</div>
-              {filtered.map((d) => (
-                <div key={d.id} className="rounded-xl border p-3 mb-3">
-                  <div className="text-sm">
-                    Les symptômes de{" "}
-                    <span className="text-red-500">
-                      l’hypertension artérielle (HTA)
-                    </span>
-                    …
-                  </div>
-                  <Score v={d.score} />
-                </div>
-              ))}
-            </div>
-            <div className="card p-6">
-              <div className="text-xl font-semibold text-blue-700 mb-2">
-                exemple
-              </div>
-              <div className="prose max-w-none">
-                <p>
-                  <strong>Health technology assessment</strong> (HTA) refers to
-                  the systematic evaluation of properties, effects, and/or
-                  impacts of health technology…
-                </p>
-                <p>
-                  …main purpose is to inform decision making regarding health
-                  technologies…
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ===== Upload modal ===== */}
-        {open && (
-          <div
-            className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4"
-            onClick={() => setOpen(false)}
-          >
-            <div
-              className="card w-full max-w-[460px] p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="text-lg font-semibold mb-4">
-                Upload a document
-              </div>
-
-              {!file && (
-                <div className="h-40 border-2 border-dashed rounded-xl grid place-items-center text-sm text-gray-500 mb-4">
-                  Choose a file (PDF, DOC/DOCX, or image)
-                </div>
-              )}
-
-              {file && (
-                <div className="rounded-xl border p-3 mb-4">
-                  <div className="font-medium">{file.name}</div>
-                  <div className="text-xs text-gray-500">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB •{" "}
-                    {file.type || "unknown"}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  className="badge"
-                  onClick={() => {
-                    setOpen(false);
-                    setFile(null);
-                  }}
-                >
-                  cancel
-                </button>
-                <button type="button" className="btn" onClick={openPicker}>
-                  Browse
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Documents section */}
+        <DocumentsPanel docs={docsForPatient} />
       </section>
-
-      {/* fallback input (also used by the modal) */}
-      <input
-        id="doc-input"
-        ref={fileRef}
-        type="file"
-        accept=".pdf,.doc,.docx,image/*"
-        hidden
-        onChange={onPick}
-      />
     </main>
   );
 }

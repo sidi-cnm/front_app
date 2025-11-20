@@ -14,7 +14,7 @@ type AppUser = {
 const USERS: AppUser[] = [
   {
     id: "u-1",
-    name: "SidiElvaly",
+    name: "Sidi Elvaly",
     email: "sidielvaly@gmail.com",
     password: "pass123",
     image: "/images/patients/sidielvaly.jpg",

@@ -1,253 +1,361 @@
+// src/app/dashboard/patients/new/page.tsx
 "use client";
 
+import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState, useRef, type ChangeEvent, type FormEvent } from "react";
-import Image from "next/image";
 import Topbar from "@/components/Topbar";
-import { CalendarDays, Mail, Phone, IdCard, MapPin, User, StickyNote, ImagePlus } from "lucide-react";
-
-type NewPatient = {
-  name: string;
-  email: string;
-  phone: string;
-  enrollNumber: string;
-  lastVisit?: string;
-  gender?: "male" | "female" | "other";
-  dob?: string;
-  address?: string;
-  notes?: string;
-  avatarDataUrl?: string | null;
-};
+import {
+  Calendar,
+  Camera,
+  FileText,
+  IdCard,
+  Mail,
+  MapPin,
+  Phone,
+  User2,
+  UserPlus,
+  X,
+} from "lucide-react";
 
 export default function NewPatientPage() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [p, setP] = useState<NewPatient>({
-    name: "",
-    email: "",
-    phone: "",
-    enrollNumber: "",
-    lastVisit: "",
-    gender: "male",
-    dob: "",
-    address: "",
-    notes: "",
-    avatarDataUrl: null,
-  });
 
-  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [enrollNumber, setEnrollNumber] = useState("");
+  const [lastVisit, setLastVisit] = useState("");
+  const [gender, setGender] = useState<"male" | "female" | "other" | "">("");
+  const [dob, setDob] = useState("");
+  const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
 
-  function set<K extends keyof NewPatient>(key: K, val: NewPatient[K]) {
-    setP((s) => ({ ...s, [key]: val }));
-  }
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setErr(null);
+  const handleAvatarClick = () => fileInputRef.current?.click();
 
-    // basic validation
-    if (!p.name.trim()) return setErr("Name is required");
-    if (!p.email.trim() || !/^\S+@\S+\.\S+$/.test(p.email)) return setErr("Valid email is required");
-    if (!p.phone.trim()) return setErr("Phone is required");
-    if (!p.enrollNumber.trim()) return setErr("Enroll number is required");
-
-    try {
-      setSaving(true);
-      const res = await fetch("/api/patients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(p),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error || "Failed to create patient");
-      }
-      router.push("/dashboard/patients");
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Unexpected error";
-      setErr(msg);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function onPickAvatar() {
-    fileRef.current?.click();
-  }
-
-  function onFileChange(e: ChangeEvent<HTMLInputElement>) {
+  const handleAvatarChange: React.ChangeEventHandler<HTMLInputElement> = (
+    e
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => set("avatarDataUrl", String(reader.result || ""));
-    reader.readAsDataURL(file);
-  }
+    const url = URL.createObjectURL(file);
+    setAvatarPreview(url);
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleCancel = () => {
+    router.push("/dashboard/patients");
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    // TODO: send to your backend – for now just demo:
+    console.log({
+      fullName,
+      email,
+      phone,
+      enrollNumber,
+      lastVisit,
+      gender,
+      dob,
+      address,
+      notes,
+    });
+    alert("Patient saved (demo). Plug this into your API.");
+    router.push("/dashboard/patients");
+  };
 
   return (
     <main className="w-full">
       <Topbar title="New patient" />
 
-      <section className="px-3 sm:px-4 lg:px-6">
-        <form onSubmit={onSubmit} className="card p-4 sm:p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg sm:text-xl font-semibold text-[#163B5B]">Create new patient</h2>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => history.back()} className="badge">Cancel</button>
-              <button className="btn" disabled={saving}>{saving ? "Saving..." : "Save patient"}</button>
+      <section className="px-3 pb-10 pt-4 sm:px-4 lg:px-6">
+        <div className="card overflow-hidden border border-slate-100 shadow-card">
+          {/* Header inside card */}
+          <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-cyan-50 to-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md">
+                <UserPlus className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Create new patient
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Register a new patient and capture their basic clinical
+                  information.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50"
+              >
+                <X className="h-3.5 w-3.5" />
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="new-patient-form"
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-1.5 text-xs font-semibold text-white shadow-md hover:bg-emerald-600"
+              >
+                Save patient
+              </button>
             </div>
           </div>
 
-          {err && <p className="mb-3 text-sm text-red-600">{err}</p>}
+          {/* Form body */}
+          <form
+            id="new-patient-form"
+            onSubmit={handleSubmit}
+            className="grid gap-8 px-6 py-6 lg:grid-cols-[minmax(0,2fr),minmax(260px,1fr)]"
+          >
+            {/* Left column: patient info */}
+            <div className="space-y-6">
+              {/* Basic info */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Full name */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Full name
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-300">
+                      <User2 className="h-4 w-4" />
+                    </span>
+                    <input
+                      type="text"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                      placeholder="e.g. Karthi"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
 
-          {/* Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Left: identity + contact */}
-            <div className="lg:col-span-2 space-y-4">
-              <Field label="Full name" icon={<User size={16} />}>
-                <input
-                  className="input"
-                  placeholder="e.g. Karthi"
-                  value={p.name}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => set("name", e.target.value)}
-                />
-              </Field>
+                {/* Email */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-300">
+                      <Mail className="h-4 w-4" />
+                    </span>
+                    <input
+                      type="email"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                      placeholder="name@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Email" icon={<Mail size={16} />}>
-                  <input
-                    className="input"
-                    type="email"
-                    placeholder="name@example.com"
-                    value={p.email}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => set("email", e.target.value)}
-                  />
-                </Field>
-                <Field label="Phone" icon={<Phone size={16} />}>
-                  <input
-                    className="input"
-                    placeholder="e.g. 7524547760"
-                    value={p.phone}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => set("phone", e.target.value)}
-                  />
-                </Field>
+                {/* Phone */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Phone
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-300">
+                      <Phone className="h-4 w-4" />
+                    </span>
+                    <input
+                      type="tel"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                      placeholder="e.g. 7524547760"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Enroll number */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Enroll number
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-300">
+                      <IdCard className="h-4 w-4" />
+                    </span>
+                    <input
+                      type="text"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                      placeholder="ID / MRN"
+                      value={enrollNumber}
+                      onChange={(e) => setEnrollNumber(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Enroll number" icon={<IdCard size={16} />}>
-                  <input
-                    className="input"
-                    placeholder="ID / MRN"
-                    value={p.enrollNumber}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => set("enrollNumber", e.target.value)}
-                  />
-                </Field>
-                <Field label="Last visit" icon={<CalendarDays size={16} />}>
-                  <input
-                    className="input"
-                    type="date"
-                    value={p.lastVisit}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => set("lastVisit", e.target.value)}
-                  />
-                </Field>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Field label="Gender">
+              {/* Second row: gender / dates / address */}
+              <div className="grid gap-4 sm:grid-cols-3">
+                {/* Gender */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Gender
+                  </label>
                   <select
-                    className="input"
-                    value={p.gender}
-                    onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                      set("gender", e.target.value as NewPatient["gender"])
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    value={gender}
+                    onChange={(e) =>
+                      setGender(e.target.value as typeof gender)
                     }
                   >
+                    <option value="">Select gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                   </select>
-                </Field>
-                <Field label="Date of birth" icon={<CalendarDays size={16} />}>
-                  <input
-                    className="input"
-                    type="date"
-                    value={p.dob}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => set("dob", e.target.value)}
-                  />
-                </Field>
-                <Field label="Address" icon={<MapPin size={16} />}>
-                  <input
-                    className="input"
-                    placeholder="City, Country"
-                    value={p.address}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => set("address", e.target.value)}
-                  />
-                </Field>
+                </div>
+
+                {/* Date of birth */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Date of birth
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-300">
+                      <Calendar className="h-4 w-4" />
+                    </span>
+                    <input
+                      type="date"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                      value={dob}
+                      onChange={(e) => setDob(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Last visit */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Last visit
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-300">
+                      <Calendar className="h-4 w-4" />
+                    </span>
+                    <input
+                      type="date"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                      value={lastVisit}
+                      onChange={(e) => setLastVisit(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
 
-              <Field label="Notes" icon={<StickyNote size={16} />}>
-                <textarea
-                  className="input min-h-[96px]"
-                  placeholder="Symptoms, allergies, important details…"
-                  value={p.notes}
-                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) => set("notes", e.target.value)}
-                />
-              </Field>
+              {/* Address */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-600">
+                  Address
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-300">
+                    <MapPin className="h-4 w-4" />
+                  </span>
+                  <input
+                    type="text"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    placeholder="City, Country"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-600">
+                  Notes
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-2.5 text-slate-300">
+                    <FileText className="h-4 w-4" />
+                  </span>
+                  <textarea
+                    className="min-h-[120px] w-full rounded-xl border border-slate-200 bg-white px-9 py-2 text-sm text-slate-800 shadow-sm outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    placeholder="Symptoms, allergies, important details..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Right: avatar uploader */}
-            <div>
-              <label className="text-sm font-medium text-gray-700">Avatar</label>
-              <div className="mt-2 card p-4 grid place-items-center gap-3 border border-dashed">
-                {p.avatarDataUrl ? (
-                  <Image
-                    src={p.avatarDataUrl}
-                    alt="avatar preview"
-                    width={112}
-                    height={112}
-                    className="h-28 w-28 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="h-28 w-28 rounded-full bg-soft grid place-items-center text-gray-400">
-                    <ImagePlus />
-                  </div>
-                )}
+            {/* Right column: avatar upload */}
+            <div className="flex flex-col rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-6">
+              <p className="text-sm font-semibold text-slate-800 mb-3">
+                Avatar
+              </p>
 
-                <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFileChange} />
-                <button type="button" className="btn" onClick={onPickAvatar}>Choose photo</button>
+              <div className="flex flex-1 flex-col items-center justify-center">
                 <button
                   type="button"
-                  className="badge"
-                  onClick={() => set("avatarDataUrl", null)}
+                  onClick={handleAvatarClick}
+                  className="flex h-32 w-32 items-center justify-center rounded-full bg-white text-slate-300 shadow-sm hover:bg-slate-50"
                 >
-                  Remove
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview}
+                      alt="Preview"
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <Camera className="h-6 w-6" />
+                  )}
                 </button>
+
+                <p className="mt-3 text-xs text-slate-500 text-center max-w-[220px]">
+                  Upload a profile photo to quickly recognize this patient.
+                  JPG or PNG, up to 2 MB.
+                </p>
+
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleAvatarClick}
+                    className="rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-medium text-white shadow-md hover:bg-emerald-600"
+                  >
+                    Choose photo
+                  </button>
+                  {avatarPreview && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveAvatar}
+                      className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
               </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </section>
     </main>
-  );
-}
-
-/** Small labeled field wrapper */
-function Field({
-  label,
-  icon,
-  children,
-}: {
-  label: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="text-sm font-medium text-gray-700">{label}</label>
-      <div className="mt-1 relative">
-        {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{icon}</span>}
-        <div className={icon ? "pl-8" : ""}>{children}</div>
-      </div>
-    </div>
   );
 }
