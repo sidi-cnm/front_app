@@ -310,6 +310,7 @@ export default function NewPatientPage() {
                   className="flex h-32 w-32 items-center justify-center rounded-full bg-white text-slate-300 shadow-sm hover:bg-slate-50"
                 >
                   {avatarPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={avatarPreview}
                       alt="Preview"

@@ -68,6 +68,11 @@ const UPCOMING_APPTS = [
   },
 ];
 
+/** Use a fixed locale so SSR and client render the same text */
+const numberFormatter = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 0,
+});
+
 /* ---------- Small helpers ---------- */
 
 function Badge({
@@ -134,7 +139,7 @@ export default function DashboardPage() {
               <div>
                 <div className="text-xs text-gray-600/80">{label}</div>
                 <div className="mt-1 text-2xl font-semibold">
-                  {value.toLocaleString()}
+                  {numberFormatter.format(value)}
                 </div>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/70">

@@ -104,6 +104,7 @@ export default function ProfilePage() {
                 onClick={handleAvatarClick}
               >
                 {avatarPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={avatarPreview}
                     alt="Avatar preview"
