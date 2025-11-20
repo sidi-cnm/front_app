@@ -166,7 +166,7 @@ export default function SignInClient({
           <div className="relative flex flex-col items-center text-center gap-2 text-white">
             <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]">
               <span className="mr-2 h-2 w-2 rounded-full bg-emerald-300" />
-              SANAMED CLINIC
+              SANAMED 
             </span>
             <h1 className="text-2xl sm:text-3xl font-semibold">
               Welcome back!
