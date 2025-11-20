@@ -64,7 +64,7 @@ export default function Topbar({ title }: { title: string }) {
         <div className="flex flex-1 items-center gap-4 min-w-0">
           <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
             <span className="mr-1 h-2 w-2 rounded-full bg-emerald-500" />
-            SANAMED CLINIC
+            SANAMED 
           </span>
 
           <div className="min-w-0">
