@@ -1,107 +1,100 @@
-const { MongoClient } = require("mongodb");
-const bcrypt = require("bcryptjs");
-require("dotenv").config();
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
-const url = process.env.DATABASE_URL;
-const client = new MongoClient(url);
+const db = new PrismaClient();
 
 async function main() {
-  await client.connect();
-  const db = client.db(); // uses DB name from URL
-
   console.log("🧹 Clearing existing data...");
-  await db.collection("User").deleteMany({});
-  await db.collection("Patient").deleteMany({});
-  await db.collection("PatientDocument").deleteMany({});
+  await db.user.deleteMany();
+  await db.patientDocument.deleteMany();
+  await db.appointment.deleteMany();
+  await db.invoice.deleteMany();
+  await db.patient.deleteMany();
 
   console.log("✅ Collections cleared!");
 
   // -------- USERS --------
   console.log("👤 Seeding users...");
-  const users = [
-    {
-      name: "Sidi Elvaly",
-      email: "sidielvaly@gmail.com",
-      passwordHash: await bcrypt.hash("pass123", 10),
-      image: "/images/patients/sidielvaly.jpg",
-      createdAt: new Date(),
-    },
-    {
-      name: "Khatu Ahmed",
-      email: "khatu@gmail.com",
-      passwordHash: await bcrypt.hash("pass123", 10),
-      image: "/images/patients/khatu.jpg",
-      createdAt: new Date(),
-    },
-  ];
-
-  await db.collection("User").insertMany(users);
+  await db.user.createMany({
+    data: [
+      {
+        name: "Sidi Elvaly",
+        email: "sidielvaly@gmail.com",
+        passwordHash: await bcrypt.hash("pass123", 10),
+      },
+      {
+        name: "Khatu Ahmed",
+        email: "khatu@gmail.com",
+        passwordHash: await bcrypt.hash("pass123", 10),
+      },
+    ],
+  });
 
   // -------- PATIENTS --------
   console.log("🧑‍⚕️ Seeding patients...");
-  const patients = [
-    {
-      name: "Aïcha Diop 2",
-      email: "aicha.diop2@example.com",
-      phone: "222 45 67 89",
-      idnum: "SN-2023-0001",
-      lastVisit: new Date("2023-12-08"),
-      photo: "/images/patients/aicha.jpg",
-      status: "ACTIVE",
-      createdAt: new Date(),
-    },
-    {
-      name: "Mamadou Ba 2",
-      email: "m.ba2@example.com",
-      phone: "222 55 11 22",
-      idnum: "SN-2023-0002",
-      lastVisit: new Date("2023-12-07"),
-      photo: "/images/patients/mamadou.jpg",
-      status: "ACTIVE",
-      createdAt: new Date(),
-    },
-  ];
+  const patients = await Promise.all(
+    Array.from({ length: 10 }).map((_, i) =>
+      db.patient.create({
+        data: {
+          name: `Patient ${i + 1}`,
+          email: `patient${i + 1}@mail.com`,
+          phone: `+222 44 44 44 ${i + 1}`,
+          idnum: `MRN-${1000 + i}`,
+          lastVisit: new Date(Date.now() - i * 86400000 * 5),
+          dob: new Date(1990, 1, i + 1),
+          status: i % 3 === 0 ? "HIGH" : i % 3 === 1 ? "MEDIUM" : "LOW",
+        },
+      })
+    )
+  );
 
-  const result = await db.collection("Patient").insertMany(patients);
+  // -------- APPOINTMENTS --------
+  console.log("📅 Seeding appointments...");
+  await Promise.all(
+    patients.slice(0, 6).map((p, i) =>
+      db.appointment.create({
+        data: {
+          patientId: p.id,
+          date: new Date(Date.now() + i * 86400000),
+          room: `Consultation ${i + 1}`,
+          type: i % 3 === 0 ? "CHECKUP" : i % 3 === 1 ? "FOLLOWUP" : "EMERGENCY",
+        },
+      })
+    )
+  );
 
-  // Map idnum → _id
-  const patientIndex = {};
-  Object.values(result.insertedIds).forEach((id, i) => {
-    patientIndex[patients[i].idnum] = id;
-  });
+  // -------- INVOICES --------
+  console.log("💰 Seeding invoices...");
+  await Promise.all(
+    patients.slice(0, 2).map((p, i) =>
+      db.invoice.create({
+        data: {
+          patientId: p.id,
+          amount: 50 + i * 25,
+          dueDate: new Date(Date.now() + i * 86400000 * 3),
+          status: "PENDING",
+        },
+      })
+    )
+  );
 
-  // -------- DOCUMENTS --------
-  console.log("📄 Seeding documents...");
-  const documents = [
-    {
-      patientId: patientIndex["SN-2023-0001"],
-      title: "Les symptômes de l’hypertension artérielle...",
-      date: new Date("2023-01-19"),
-      isFavorite: true,
-      createdAt: new Date(),
-    },
-    {
-      patientId: patientIndex["SN-2023-0001"],
-      title: "Bilan sanguin – suivi diabète de type 2...",
-      date: new Date("2023-02-22"),
-      isFavorite: false,
-      createdAt: new Date(),
-    },
-    {
-      patientId: patientIndex["SN-2023-0002"],
-      title: "Compte-rendu d’IRM cérébrale...",
-      date: new Date("2023-03-05"),
-      isFavorite: false,
-      createdAt: new Date(),
-    },
-  ];
-
-  await db.collection("PatientDocument").insertMany(documents);
+    await Promise.all(
+    patients.slice(0, 3).map((p, i) =>
+      db.invoice.create({
+        data: {
+          patientId: p.id,
+          amount: 50 + i * 25,
+          dueDate: new Date(Date.now() + i * 86400000 * 3),
+          status: "PAID",
+        },
+      })
+    )
+  );
+  
 
   console.log("✅✅ Seeding complete!");
-  await client.close();
 }
 
-main().catch((e) => {
-  console.error("❌ Seeding failed:", e);
-});
+main()
+  .catch((e) => console.error("❌ Seeding failed:", e))
+  .finally(() => db.$disconnect());
