@@ -8,12 +8,14 @@ generator client {
 }
 
 model User {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  name         String
-  email        String   @unique
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String?
+  email       String   @unique
   passwordHash String
-  image        String?
-  createdAt    DateTime @default(now())
+  phone       String?
+  address     String?
+  image       String?
+  createdAt   DateTime @default(now())
 }
 
 model Patient {
