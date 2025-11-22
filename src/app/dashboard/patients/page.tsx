@@ -17,7 +17,6 @@ import {
 import { useState, useRef, useEffect } from "react";
 import type { ChangeEvent } from "react";
 
-/* Small reusable circular icon button */
 function IconButton({
   title,
   onClick,
@@ -44,19 +43,14 @@ function IconButton({
   );
 }
 
-/* Status pill */
 function StatusPill({ value }: { value: string }) {
   const v = value?.toLowerCase();
   const map =
-    v === "blocked" || v === "inactive"
-      ? {
-          label: value,
-          cls: "bg-rose-50 text-rose-700 border-rose-200",
-        }
-      : {
-          label: value || "Active",
-          cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        };
+    v === "high"
+      ? { label: "Risk: HIGH", cls: "bg-rose-50 text-rose-700 border-rose-200" }
+      : v === "medium"
+      ? { label: "Risk: MEDIUM", cls: "bg-amber-50 text-amber-700 border-amber-200" }
+      : { label: "Risk: LOW", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
 
   return (
     <span
@@ -67,24 +61,30 @@ function StatusPill({ value }: { value: string }) {
   );
 }
 
+
 export default function PatientsPage() {
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
 
-  // File import ref
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Fetch patients from API
   useEffect(() => {
     fetch("/api/patients")
       .then((res) => res.json())
       .then((data) => {
-        setPatients(data);
+        // ✅ Ensure we always set an array
+        if (Array.isArray(data)) {
+          setPatients(data);
+        } else {
+          console.error("Invalid API response:", data);
+          setPatients([]);
+        }
         setLoading(false);
       })
       .catch((err) => {
         console.error("Failed to load patients:", err);
+        setPatients([]);
         setLoading(false);
       });
   }, []);
@@ -98,9 +98,7 @@ export default function PatientsPage() {
     );
   }
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleImportClick = () => fileInputRef.current?.click();
 
   const handleImportChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -117,39 +115,30 @@ export default function PatientsPage() {
     const result = await res.json();
 
     alert(result.message || "Import complete!");
-
     window.location.reload();
-
     e.target.value = "";
   };
-
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Delete ${name}? This action cannot be undone.`)) return;
 
-    try {
-      const res = await fetch(`/api/patients/${id}`, {
-        method: "DELETE",
-      });
+    const res = await fetch(`/api/patients/${id}`, {
+      method: "DELETE",
+    });
 
-      if (!res.ok) {
-        alert("Failed to delete patient");
-        return;
-      }
+    if (!res.ok) return alert("Failed to delete patient");
 
-      // ✅ Refresh the page to update the list
-      window.location.reload();
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong");
-    }
+    window.location.reload();
   }
 
-
-  const filtered =
-    q.trim() === ""
+  // ✅ Safe filtering
+  const filtered = Array.isArray(patients)
+    ? q.trim() === ""
       ? patients
-      : patients.filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
+      : patients.filter((p) =>
+          p.name.toLowerCase().includes(q.toLowerCase())
+        )
+    : [];
 
   return (
     <main className="w-full">
@@ -157,70 +146,54 @@ export default function PatientsPage() {
 
       <section className="px-3 sm:px-4 lg:px-6">
         <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 overflow-hidden">
-          {/* Top green bar (search + filter) */}
           <div className="bg-brand px-4 py-4 sm:px-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                <div className="relative w-full sm:w-72">
-                  <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
-                  <input
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    className="h-9 w-full rounded-lg border border-white/20 bg-white/10 pl-9 pr-3 text-xs text-white placeholder:text-white/70 outline-none focus:bg-white focus:text-gray-900 focus:placeholder:text-gray-400"
-                    placeholder="Search patients..."
-                  />
-                </div>
-
-                <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-xs font-medium text-white hover:bg-white/25">
-                  <Filter className="h-3.5 w-3.5" />
-                  Filter
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs + actions row */}
-          <div className="border-b border-gray-100 px-4 py-3 sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href="/dashboard/patients/new"
-                  className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-brand/90"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add new
-                </Link>
-
-                {/* Import button */}
-                <button
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                  type="button"
-                  onClick={handleImportClick}
-                >
-                  Import patients
-                </button>
+              <div className="relative w-full sm:w-72">
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
                 <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                  onChange={handleImportChange}
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  className="h-9 w-full rounded-lg border border-white/20 bg-white/10 pl-9 pr-3 text-xs text-white placeholder:text-white/70 outline-none focus:bg-white focus:text-gray-900 focus:placeholder:text-gray-400"
+                  placeholder="Search patients..."
                 />
-
-                <button
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                  type="button"
-                  onClick={() => {
-                    window.location.href = "/api/patients/export";
-                  }}
-                >
-                  Export patients (Excel)
-                </button>
               </div>
             </div>
           </div>
 
-          {/* Table section */}
+          <div className="border-b border-gray-100 px-4 py-3 sm:px-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/dashboard/patients/new"
+                className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-brand/90"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add new
+              </Link>
+
+              <button
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                onClick={handleImportClick}
+              >
+                Import patients
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".csv"
+                onChange={handleImportChange}
+              />
+
+              <button
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => (window.location.href = "/api/patients/export")}
+              >
+                Export patients (Excel)
+              </button>
+            </div>
+          </div>
+
+          {/* ✅ Table */}
           <div className="overflow-x-auto px-2 pb-4 pt-2 sm:px-4">
             <table className="min-w-[860px] w-full border-separate border-spacing-y-2 text-sm">
               <thead>
@@ -235,94 +208,80 @@ export default function PatientsPage() {
               </thead>
 
               <tbody>
-                {filtered.map((p) => {
-                  const status = p.status || "Active";
-
-                  return (
-                    <tr
-                      key={p.id}
-                      className="rounded-xl bg-white shadow-[0_4px_12px_rgba(15,23,42,0.06)]"
-                    >
-                      {/* Patient + avatar + email */}
-                      <td className="px-3 py-3">
-                        <div className="flex items-center gap-3">
-                          <Avatar name={p.name} />
-                          <div>
-                            <Link
-                              href={`/dashboard/patients/${p.id}`}
-                              className="text-sm font-medium text-slate-900 hover:underline"
-                            >
-                              {p.name}
-                            </Link>
-                            <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
-                              <Mail className="h-3.5 w-3.5 text-gray-400" />
-                              {p.email}
-                            </div>
+                {filtered.map((p) => (
+                  <tr
+                    key={p.id}
+                    className="rounded-xl bg-white shadow-[0_4px_12px_rgba(15,23,42,0.06)]"
+                  >
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar name={p.name} />
+                        <div>
+                          <Link
+                            href={`/dashboard/patients/${p.id}`}
+                            className="text-sm font-medium text-slate-900 hover:underline"
+                          >
+                            {p.name}
+                          </Link>
+                          <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
+                            <Mail className="h-3.5 w-3.5 text-gray-400" />
+                            {p.email}
                           </div>
                         </div>
-                      </td>
+                      </div>
+                    </td>
 
-                      {/* Phone */}
-                      <td className="px-3 py-3 text-gray-700">
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-3.5 w-3.5 text-gray-400" />
-                          {p.phone}
-                        </div>
-                      </td>
+                    <td className="px-3 py-3 text-gray-700">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-3.5 w-3.5 text-gray-400" />
+                        {p.phone}
+                      </div>
+                    </td>
 
-                      {/* Enroll number */}
-                      <td className="px-3 py-3 text-gray-700">
-                        <div className="flex items-center gap-2">
-                          <IdCard className="h-3.5 w-3.5 text-gray-400" />
-                          {p.idnum}
-                        </div>
-                      </td>
+                    <td className="px-3 py-3 text-gray-700">
+                      <div className="flex items-center gap-2">
+                        <IdCard className="h-3.5 w-3.5 text-gray-400" />
+                        {p.idnum}
+                      </div>
+                    </td>
 
-                      {/* Last visit */}
-                      <td className="px-3 py-3 text-gray-700">
-                        {p.lastVisit
-                          ? new Date(p.lastVisit).toLocaleDateString()
-                          : "-"}
-                      </td>
+                    <td className="px-3 py-3 text-gray-700">
+                      {p.lastVisit ? new Date(p.lastVisit).toLocaleDateString() : "-"}
+                    </td>
 
-                      {/* Status pill */}
-                      <td className="px-3 py-3">
-                        <StatusPill value={status} />
-                      </td>
+                    <td className="px-3 py-3">
+                      <StatusPill value={p.status || "LOW"} />
+                    </td>
 
-                      {/* Icons only */}
-                      <td className="px-3 py-3">
-                        <div className="flex justify-center gap-2">
-                          <Link href={`/dashboard/patients/${p.id}`} title="View">
-                            <IconButton title="View">
-                              <Eye className="h-3.5 w-3.5" />
-                            </IconButton>
-                          </Link>
-                         <Link href={`/dashboard/patients/${p.id}/edit`}>
-                            <IconButton title="Edit" variant="primary">
-                              <PencilLine className="h-3.5 w-3.5" />
-                            </IconButton>
-                          </Link>
-
-                         <IconButton
-                            title="Delete"
-                            variant="danger"
-                            onClick={() => handleDelete(p.id, p.name)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
+                    <td className="px-3 py-3">
+                      <div className="flex justify-center gap-2">
+                        <Link href={`/dashboard/patients/${p.id}`} title="View">
+                          <IconButton title="View">
+                            <Eye className="h-3.5 w-3.5" />
                           </IconButton>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </Link>
+
+                        <Link href={`/dashboard/patients/${p.id}/edit`} title="Edit">
+                          <IconButton title="Edit" variant="primary">
+                            <PencilLine className="h-3.5 w-3.5" />
+                          </IconButton>
+                        </Link>
+
+                        <IconButton
+                          title="Delete"
+                          variant="danger"
+                          onClick={() => handleDelete(p.id, p.name)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </IconButton>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
 
                 {filtered.length === 0 && (
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="px-3 py-8 text-center text-sm text-gray-500"
-                    >
+                    <td colSpan={6} className="px-3 py-8 text-center text-sm text-gray-500">
                       No patients found.
                     </td>
                   </tr>

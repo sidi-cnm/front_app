@@ -52,6 +52,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         lastVisit: data.lastVisit ? new Date(data.lastVisit) : null,
         dob: data.dob ? new Date(data.dob) : null,
         address: data.address || "",
+        status: data.status || "",
         notes: data.notes || "",
         gender: data.gender || "",
       },

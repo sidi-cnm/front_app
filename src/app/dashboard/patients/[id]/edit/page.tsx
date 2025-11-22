@@ -29,6 +29,7 @@ export default function EditPatientPage( { params }: { params: Promise<{ id: str
   const [gender, setGender] = useState<"male" | "female" | "other" | "">("");
   const [dob, setDob] = useState("");
   const [address, setAddress] = useState("");
+   const [status, setStatus] = useState("");
   const [notes, setNotes] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -52,6 +53,7 @@ export default function EditPatientPage( { params }: { params: Promise<{ id: str
         setDob(patient.dob ? patient.dob.slice(0, 10) : "");
         setGender(patient.gender || "");
         setAddress(patient.address || "");
+        setStatus(patient.status || "");
         setNotes(patient.notes || "");
 
 
@@ -101,6 +103,7 @@ export default function EditPatientPage( { params }: { params: Promise<{ id: str
           gender,
           dob,
           address,
+          status,
           notes,
         }),
       });
@@ -322,6 +325,24 @@ export default function EditPatientPage( { params }: { params: Promise<{ id: str
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                   />
+                </div>
+              </div>
+
+                <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-600">
+                  Status
+                </label>
+                <div className="relative">
+                  <select
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                  >
+                    <option value="">Select status</option>
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                  </select>
                 </div>
               </div>
 

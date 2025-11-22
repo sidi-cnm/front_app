@@ -30,6 +30,7 @@ export async function POST(req: Request) {
       gender,
       dob,
       address,
+      status,
       notes,
     } = body;
 
@@ -50,6 +51,7 @@ export async function POST(req: Request) {
         gender: gender || "",
         dob: dob ? new Date(dob) : null,
         address: address || "",
+        status: status || "",
         notes: notes || "",
       },
     });

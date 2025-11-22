@@ -145,9 +145,9 @@ function DocumentsPanel({ docs, patientId }: { docs: any[]; patientId: string })
             <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400">
               <span>{doc.date}</span>
               <div className="flex items-center gap-2">
-                <button
+               <button
                   type="button"
-                  onClick={() => alert("TODO: open document preview")}
+                  onClick={() => window.open(`/api/patients/${patientId}/documents/${doc.id}`, "_blank")}
                   className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100"
                 >
                   View

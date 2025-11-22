@@ -27,7 +27,7 @@ model Patient {
   address   String?
   notes     String?
   gender    String?
-  status    PatientStatus? @default(ACTIVE)
+  status    PatientStatus? @default(LOW)
   createdAt DateTime       @default(now())
 
   documents PatientDocument[]
@@ -69,9 +69,9 @@ model Invoice {
 }
 
 enum PatientStatus {
-  ACTIVE
-  INACTIVE
-  BLOCKED
+  LOW
+  MEDIUM
+  HIGH
 }
 
 enum AppointmentType {

@@ -27,6 +27,7 @@ export default function NewPatientPage() {
   const [gender, setGender] = useState<"male" | "female" | "other" | "">("");
   const [dob, setDob] = useState("");
   const [address, setAddress] = useState("");
+  const [status, setStatus] = useState("");
   const [notes, setNotes] = useState("");
 
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -68,6 +69,7 @@ const handleSubmit = async (e: FormEvent) => {
         gender,
         dob,
         address,
+        status,
         notes,
       }),
     });
@@ -290,6 +292,24 @@ const handleSubmit = async (e: FormEvent) => {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                   />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-600">
+                  Status
+                </label>
+                <div className="relative">
+                  <select
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                  >
+                    <option value="">Select status</option>
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                  </select>
                 </div>
               </div>
 
