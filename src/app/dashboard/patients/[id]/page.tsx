@@ -1,11 +1,11 @@
+// src/app/dashboard/patients/[id]/page.tsx
 "use client";
 
-import { useState, useEffect, useRef , use as usePromise} from "react";
+import { useState, useEffect, useRef, use as usePromise } from "react";
 import Topbar from "@/components/Topbar";
 import { FileText, Star, StarOff, UploadCloud } from "lucide-react";
 
 /* ----------------- Helpers: patient meta with fallbacks -------------- */
-
 function buildPatientMeta(p: any) {
   return {
     dob: p.dob ?? "23.07.1994",
@@ -19,8 +19,7 @@ function buildPatientMeta(p: any) {
 }
 
 /* -------------------------- Documents panel ------------------------- */
-
-function DocumentsPanel({ docs }: { docs: any[] }) {
+function DocumentsPanel({ docs, patientId }: { docs: any[]; patientId: string }) {
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"all" | "favorite" | "recent">("recent");
 
@@ -28,11 +27,24 @@ function DocumentsPanel({ docs }: { docs: any[] }) {
 
   const handleImportClick = () => fileInputRef.current?.click();
 
-  const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
-    const file = event.target.files?.[0];
+  const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const file = e.target.files?.[0];
     if (!file) return;
-    alert(`Selected file: ${file.name}`);
-    event.target.value = "";
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("title", file.name);
+
+    const res = await fetch(`/api/patients/${patientId}/documents`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await res.json();
+    alert(result.message || "Uploaded!");
+
+    window.location.reload();
+    e.target.value = "";
   };
 
   const filtered = docs
@@ -71,7 +83,7 @@ function DocumentsPanel({ docs }: { docs: any[] }) {
 
       {/* Tabs + search */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Tabs LEFT */}
+        {/* Tabs */}
         <div className="inline-flex rounded-full bg-slate-100 p-1 text-xs font-medium text-slate-500">
           <button
             type="button"
@@ -105,7 +117,7 @@ function DocumentsPanel({ docs }: { docs: any[] }) {
           </button>
         </div>
 
-        {/* Search RIGHT */}
+        {/* Search */}
         <div className="relative w-full sm:max-w-xs">
           <input
             className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
@@ -116,7 +128,7 @@ function DocumentsPanel({ docs }: { docs: any[] }) {
         </div>
       </div>
 
-      {/* Cards grid */}
+      {/* Cards */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filtered.map((doc) => (
           <article
@@ -167,7 +179,6 @@ function DocumentsPanel({ docs }: { docs: any[] }) {
 }
 
 /* ---------------------------- Page component ---------------------------- */
-
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = usePromise(params);
 
@@ -176,29 +187,28 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
- useEffect(() => {
-  async function loadData() {
-    try {
-      const res = await fetch(`/api/patients/${id}`);
-      if (res.status === 404) {
-        setNotFound(true);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch(`/api/patients/${id}`);
+        if (res.status === 404) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+
+        const { patient, documents } = await res.json();
+        setPatient(patient);
+        setDocs(documents || []);
+      } catch (error) {
+        console.error("Failed to load patient", error);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const { patient, documents } = await res.json();
-      setPatient(patient);
-      setDocs(documents || []);
-    } catch (error) {
-      console.error("Failed to load patient", error);
-    } finally {
-      setLoading(false);
     }
-  }
 
-  loadData();
-}, [id]);
-
+    loadData();
+  }, [id]);
 
   if (loading) {
     return (
@@ -295,7 +305,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         </div>
 
         {/* Documents section */}
-        <DocumentsPanel docs={docs} />
+        <DocumentsPanel docs={docs} patientId={id} />
       </section>
     </main>
   );

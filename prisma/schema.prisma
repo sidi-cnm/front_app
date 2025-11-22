@@ -19,27 +19,35 @@ model User {
 model Patient {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
-  email     String?
-  phone     String?
-  idnum     String?
+  email     String
+  phone     String
+  idnum     String
   lastVisit DateTime?
   dob       DateTime?
   address   String?
   notes     String?
-  gender    String?   
-  createdAt DateTime  @default(now())
+  gender    String?
+  status    PatientStatus? @default(ACTIVE)
+  createdAt DateTime       @default(now())
+
+  documents PatientDocument[]
 }
+
 
 
 model PatientDocument {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  patientId  String   @db.ObjectId
-  title      String
-  date       DateTime?
-  isFavorite Boolean  @default(false)
-  fileUrl    String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  patientId String
+  title     String
+  date      DateTime
+  isFavorite Boolean @default(false)
+
+  fileName  String
+  fileData  String   // Base64 PDF
+
+  patient   Patient  @relation(fields: [patientId], references: [id])
 }
+
 
 model Appointment {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
