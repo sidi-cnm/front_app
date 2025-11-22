@@ -102,18 +102,49 @@ export default function PatientsPage() {
     fileInputRef.current?.click();
   };
 
-  const handleImportChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImportChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    alert(`Selected file: ${file.name}`);
+
+    const text = await file.text();
+
+    const res = await fetch("/api/patients/import", {
+      method: "POST",
+      headers: { "Content-Type": "text/csv" },
+      body: text,
+    });
+
+    const result = await res.json();
+
+    alert(result.message || "Import complete!");
+
+    window.location.reload();
+
     e.target.value = "";
   };
 
-  function handleDelete(name: string) {
-    if (confirm(`Delete ${name}? This action cannot be undone.`)) {
-      console.log("TODO: delete", name);
+
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Delete ${name}? This action cannot be undone.`)) return;
+
+    try {
+      const res = await fetch(`/api/patients/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        alert("Failed to delete patient");
+        return;
+      }
+
+      // ✅ Refresh the page to update the list
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
     }
   }
+
 
   const filtered =
     q.trim() === ""
@@ -176,7 +207,13 @@ export default function PatientsPage() {
                   onChange={handleImportChange}
                 />
 
-                <button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                <button
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/api/patients/export";
+                  }}
+                >
                   Export patients (Excel)
                 </button>
               </div>
@@ -261,17 +298,16 @@ export default function PatientsPage() {
                               <Eye className="h-3.5 w-3.5" />
                             </IconButton>
                           </Link>
-                          <IconButton
-                            title="Edit"
-                            variant="primary"
-                            onClick={() => alert(`Edit ${p.name}`)}
-                          >
-                            <PencilLine className="h-3.5 w-3.5" />
-                          </IconButton>
-                          <IconButton
+                         <Link href={`/dashboard/patients/${p.id}/edit`}>
+                            <IconButton title="Edit" variant="primary">
+                              <PencilLine className="h-3.5 w-3.5" />
+                            </IconButton>
+                          </Link>
+
+                         <IconButton
                             title="Delete"
                             variant="danger"
-                            onClick={() => handleDelete(p.name)}
+                            onClick={() => handleDelete(p.id, p.name)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </IconButton>
@@ -293,22 +329,6 @@ export default function PatientsPage() {
                 )}
               </tbody>
             </table>
-          </div>
-
-          {/* Simple pagination mock */}
-          <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-4 py-3 text-xs text-gray-600 sm:px-6">
-            <button className="rounded-full bg-brand px-3 py-1 text-xs font-medium text-white">
-              1
-            </button>
-            <button className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50">
-              2
-            </button>
-            <button className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50">
-              3
-            </button>
-            <button className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50">
-              4
-            </button>
           </div>
         </div>
       </section>

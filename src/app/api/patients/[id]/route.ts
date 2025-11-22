@@ -37,3 +37,49 @@ export async function GET(
     );
   }
 }
+
+export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  try {
+    const data = await req.json();
+
+    const updated = await db.patient.update({
+      where: { id: params.id },
+      data: {
+        name: data.name,
+        email: data.email || "",
+        phone: data.phone || "",
+        idnum: data.idnum || "",
+        lastVisit: data.lastVisit ? new Date(data.lastVisit) : null,
+        dob: data.dob ? new Date(data.dob) : null,
+        address: data.address || "",
+        notes: data.notes || "",
+        gender: data.gender || "",
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error("Error updating patient:", error);
+    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await db.patient.delete({
+      where: { id: params.id },
+    });
+
+    return NextResponse.json({ message: "Patient deleted" });
+  } catch (error) {
+    console.error("Error deleting patient:", error);
+    return NextResponse.json(
+      { error: "Delete failed" },
+      { status: 500 }
+    );
+  }
+}
+

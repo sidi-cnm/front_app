@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { useEffect, useState, useRef, FormEvent , use as usePromise} from "react";
 import { useRouter } from "next/navigation";
 import Topbar from "@/components/Topbar";
 import {
@@ -16,8 +16,10 @@ import {
   X,
 } from "lucide-react";
 
-export default function NewPatientPage() {
+export default function EditPatientPage( { params }: { params: Promise<{ id: string }> }) {
+
   const router = useRouter();
+    const { id } = usePromise(params);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -29,14 +31,44 @@ export default function NewPatientPage() {
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
 
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  // ✅ Load patient data
+  useEffect(() => {
+    async function fetchPatient() {
+      try {
+        const res = await fetch(`/api/patients/${id}`);
+        if (!res.ok) throw new Error("Failed to load patient");
+        const data = await res.json();
+        const patient = data.patient;
+
+        setFullName(patient.name || "");
+        setEmail(patient.email || "");
+        setPhone(patient.phone || "");
+        setEnrollNumber(patient.idnum || "");
+        setLastVisit(patient.lastVisit ? patient.lastVisit.slice(0, 10) : "");
+        setDob(patient.dob ? patient.dob.slice(0, 10) : "");
+        setGender(patient.gender || "");
+        setAddress(patient.address || "");
+        setNotes(patient.notes || "");
+
+
+
+      } catch (err) {
+        alert("Failed to load patient");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPatient();
+  }, [id]);
 
   const handleAvatarClick = () => fileInputRef.current?.click();
 
-  const handleAvatarChange: React.ChangeEventHandler<HTMLInputElement> = (
-    e
-  ) => {
+  const handleAvatarChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
@@ -52,47 +84,56 @@ export default function NewPatientPage() {
     router.push("/dashboard/patients");
   };
 
-const handleSubmit = async (e: FormEvent) => {
-  e.preventDefault();
+  // ✅ Submit update (PUT)
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
 
-  try {
-    const res = await fetch("/api/patients", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: fullName,
-        email,
-        phone,
-        idnum: enrollNumber,
-        lastVisit,
-        gender,
-        dob,
-        address,
-        notes,
-      }),
-    });
+    try {
+      const res = await fetch(`/api/patients/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: fullName,
+          email,
+          phone,
+          idnum: enrollNumber,
+          lastVisit,
+          gender,
+          dob,
+          address,
+          notes,
+        }),
+      });
 
-    if (!res.ok) {
-      const error = await res.json();
-      alert(error.error || "Failed to create patient");
-      return;
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || "Failed to update patient");
+        return;
+      }
+
+      router.push("/dashboard/patients");
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
     }
+  };
 
-    router.push("/dashboard/patients");
-  } catch (err) {
-    console.error(err);
-    alert("Something went wrong");
+  if (loading) {
+    return (
+      <main className="w-full">
+        <Topbar title="Edit patient" />
+        <div className="px-4 py-6 text-sm text-gray-500">Loading...</div>
+      </main>
+    );
   }
-};
-
 
   return (
     <main className="w-full">
-      <Topbar title="New patient" />
+      <Topbar title="Edit patient" />
 
       <section className="px-3 pb-10 pt-4 sm:px-4 lg:px-6">
         <div className="card overflow-hidden border border-slate-100 shadow-card">
-          {/* Header inside card */}
+          {/* Header */}
           <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-cyan-50 to-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md">
@@ -100,11 +141,10 @@ const handleSubmit = async (e: FormEvent) => {
               </span>
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">
-                  Create new patient
+                  Edit patient
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Register a new patient and capture their basic clinical
-                  information.
+                  Update clinical information for this patient.
                 </p>
               </div>
             </div>
@@ -120,23 +160,22 @@ const handleSubmit = async (e: FormEvent) => {
               </button>
               <button
                 type="submit"
-                form="new-patient-form"
+                form="edit-patient-form"
                 className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-1.5 text-xs font-semibold text-white shadow-md hover:bg-emerald-600"
               >
-                Save patient
+                Save changes
               </button>
             </div>
           </div>
 
-          {/* Form body */}
+          {/* Form */}
           <form
-            id="new-patient-form"
+            id="edit-patient-form"
             onSubmit={handleSubmit}
             className="grid gap-8 px-6 py-6 lg:grid-cols-[minmax(0,2fr),minmax(260px,1fr)]"
           >
-            {/* Left column: patient info */}
+            {/* Left column */}
             <div className="space-y-6">
-              {/* Basic info */}
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Full name */}
                 <div className="space-y-1">
@@ -149,8 +188,7 @@ const handleSubmit = async (e: FormEvent) => {
                     </span>
                     <input
                       type="text"
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                      placeholder="e.g. Karthi"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
@@ -169,8 +207,7 @@ const handleSubmit = async (e: FormEvent) => {
                     </span>
                     <input
                       type="email"
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                      placeholder="name@example.com"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
@@ -188,8 +225,7 @@ const handleSubmit = async (e: FormEvent) => {
                     </span>
                     <input
                       type="tel"
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                      placeholder="e.g. 7524547760"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
@@ -207,8 +243,7 @@ const handleSubmit = async (e: FormEvent) => {
                     </span>
                     <input
                       type="text"
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                      placeholder="ID / MRN"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm"
                       value={enrollNumber}
                       onChange={(e) => setEnrollNumber(e.target.value)}
                     />
@@ -216,7 +251,7 @@ const handleSubmit = async (e: FormEvent) => {
                 </div>
               </div>
 
-              {/* Second row: gender / dates / address */}
+              {/* Row 2 */}
               <div className="grid gap-4 sm:grid-cols-3">
                 {/* Gender */}
                 <div className="space-y-1">
@@ -224,11 +259,9 @@ const handleSubmit = async (e: FormEvent) => {
                     Gender
                   </label>
                   <select
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
                     value={gender}
-                    onChange={(e) =>
-                      setGender(e.target.value as typeof gender)
-                    }
+                    onChange={(e) => setGender(e.target.value as any)}
                   >
                     <option value="">Select gender</option>
                     <option value="male">Male</option>
@@ -237,7 +270,7 @@ const handleSubmit = async (e: FormEvent) => {
                   </select>
                 </div>
 
-                {/* Date of birth */}
+                {/* DOB */}
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-slate-600">
                     Date of birth
@@ -248,7 +281,7 @@ const handleSubmit = async (e: FormEvent) => {
                     </span>
                     <input
                       type="date"
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm"
                       value={dob}
                       onChange={(e) => setDob(e.target.value)}
                     />
@@ -266,7 +299,7 @@ const handleSubmit = async (e: FormEvent) => {
                     </span>
                     <input
                       type="date"
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm"
                       value={lastVisit}
                       onChange={(e) => setLastVisit(e.target.value)}
                     />
@@ -285,8 +318,7 @@ const handleSubmit = async (e: FormEvent) => {
                   </span>
                   <input
                     type="text"
-                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 shadow-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                    placeholder="City, Country"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                   />
@@ -303,8 +335,7 @@ const handleSubmit = async (e: FormEvent) => {
                     <FileText className="h-4 w-4" />
                   </span>
                   <textarea
-                    className="min-h-[120px] w-full rounded-xl border border-slate-200 bg-white px-9 py-2 text-sm text-slate-800 shadow-sm outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                    placeholder="Symptoms, allergies, important details..."
+                    className="min-h-[120px] w-full rounded-xl border border-slate-200 bg-white px-9 py-2 text-sm"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                   />
@@ -312,11 +343,9 @@ const handleSubmit = async (e: FormEvent) => {
               </div>
             </div>
 
-            {/* Right column: avatar upload */}
+            {/* Right column - avatar (still demo) */}
             <div className="flex flex-col rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-6">
-              <p className="text-sm font-semibold text-slate-800 mb-3">
-                Avatar
-              </p>
+              <p className="text-sm font-semibold text-slate-800 mb-3">Avatar</p>
 
               <div className="flex flex-1 flex-col items-center justify-center">
                 <button
@@ -325,7 +354,6 @@ const handleSubmit = async (e: FormEvent) => {
                   className="flex h-32 w-32 items-center justify-center rounded-full bg-white text-slate-300 shadow-sm hover:bg-slate-50"
                 >
                   {avatarPreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={avatarPreview}
                       alt="Preview"
@@ -337,8 +365,7 @@ const handleSubmit = async (e: FormEvent) => {
                 </button>
 
                 <p className="mt-3 text-xs text-slate-500 text-center max-w-[220px]">
-                  Upload a profile photo to quickly recognize this patient.
-                  JPG or PNG, up to 2 MB.
+                  Avatar upload coming soon.
                 </p>
 
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-3">

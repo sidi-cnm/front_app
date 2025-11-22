@@ -1,7 +1,6 @@
-// src/app/dashboard/patients/[id]/page.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef , use as usePromise} from "react";
 import Topbar from "@/components/Topbar";
 import { FileText, Star, StarOff, UploadCloud } from "lucide-react";
 
@@ -169,8 +168,8 @@ function DocumentsPanel({ docs }: { docs: any[] }) {
 
 /* ---------------------------- Page component ---------------------------- */
 
-export default function PatientProfilePage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = usePromise(params);
 
   const [patient, setPatient] = useState<any>(null);
   const [docs, setDocs] = useState<any[]>([]);

@@ -21,7 +21,17 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const { name, email, phone, idnum } = body;
+    const {
+      name,
+      email,
+      phone,
+      idnum,
+      lastVisit,
+      gender,
+      dob,
+      address,
+      notes,
+    } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -36,6 +46,11 @@ export async function POST(req: Request) {
         email: email || "",
         phone: phone || "",
         idnum: idnum || "",
+        lastVisit: lastVisit ? new Date(lastVisit) : null,
+        gender: gender || "",
+        dob: dob ? new Date(dob) : null,
+        address: address || "",
+        notes: notes || "",
       },
     });
 
@@ -49,4 +64,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
 
