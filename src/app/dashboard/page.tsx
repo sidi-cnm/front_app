@@ -1,5 +1,7 @@
 "use client";
-
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 import Topbar from "@/components/Topbar";
 import Avatar from "@/components/Avatar";
@@ -44,6 +46,10 @@ function Badge({
 /* ---------- MAIN PAGE ---------- */
 
 export default function DashboardPage() {
+  const session =  getServerSession(authOptions);
+
+  if (!session) redirect("/signin");
+
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
