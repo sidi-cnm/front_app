@@ -2,7 +2,6 @@
 
 import Topbar from "@/components/Topbar";
 import Avatar from "@/components/Avatar";
-import { patients } from "@/lib/mock";
 import Link from "next/link";
 import {
   PencilLine,
@@ -15,7 +14,7 @@ import {
   Search as SearchIcon,
   Filter,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { ChangeEvent } from "react";
 
 /* Small reusable circular icon button */
@@ -47,7 +46,7 @@ function IconButton({
 
 /* Status pill */
 function StatusPill({ value }: { value: string }) {
-  const v = value.toLowerCase();
+  const v = value?.toLowerCase();
   const map =
     v === "blocked" || v === "inactive"
       ? {
@@ -69,10 +68,35 @@ function StatusPill({ value }: { value: string }) {
 }
 
 export default function PatientsPage() {
+  const [patients, setPatients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
 
-  // -------- Import patients (file picker) --------
+  // File import ref
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Fetch patients from API
+  useEffect(() => {
+    fetch("/api/patients")
+      .then((res) => res.json())
+      .then((data) => {
+        setPatients(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load patients:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="w-full">
+        <Topbar title="Patients" />
+        <div className="px-4 py-6 text-sm text-gray-500">Loading patients...</div>
+      </main>
+    );
+  }
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -81,20 +105,13 @@ export default function PatientsPage() {
   const handleImportChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // TODO: send this file to your backend to import patients
-    console.log("Selected import file:", file);
     alert(`Selected file: ${file.name}`);
-
-    // reset so the same file can be chosen again
     e.target.value = "";
   };
-  // ------------------------------------------------
 
   function handleDelete(name: string) {
     if (confirm(`Delete ${name}? This action cannot be undone.`)) {
-      // TODO: call your API to delete
-      console.log("delete", name);
+      console.log("TODO: delete", name);
     }
   }
 
@@ -143,7 +160,7 @@ export default function PatientsPage() {
                   Add new
                 </Link>
 
-                {/* IMPORT PATIENTS BUTTON + HIDDEN INPUT */}
+                {/* Import button */}
                 <button
                   className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
                   type="button"
@@ -182,10 +199,7 @@ export default function PatientsPage() {
 
               <tbody>
                 {filtered.map((p) => {
-                  const status =
-                    "status" in p
-                      ? String((p as { status?: string }).status ?? "Active")
-                      : "Active";
+                  const status = p.status || "Active";
 
                   return (
                     <tr
@@ -228,7 +242,11 @@ export default function PatientsPage() {
                       </td>
 
                       {/* Last visit */}
-                      <td className="px-3 py-3 text-gray-700">{p.lastVisit}</td>
+                      <td className="px-3 py-3 text-gray-700">
+                        {p.lastVisit
+                          ? new Date(p.lastVisit).toLocaleDateString()
+                          : "-"}
+                      </td>
 
                       {/* Status pill */}
                       <td className="px-3 py-3">

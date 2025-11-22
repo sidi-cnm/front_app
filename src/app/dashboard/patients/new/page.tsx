@@ -53,23 +53,39 @@ export default function NewPatientPage() {
     router.push("/dashboard/patients");
   };
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    // TODO: send to your backend – for now just demo:
-    console.log({
-      fullName,
-      email,
-      phone,
-      enrollNumber,
-      lastVisit,
-      gender,
-      dob,
-      address,
-      notes,
+const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault();
+
+  try {
+    const res = await fetch("/api/patients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: fullName,
+        email,
+        phone,
+        idnum: enrollNumber,
+        lastVisit,
+        gender,
+        dob,
+        address,
+        notes,
+      }),
     });
-    alert("Patient saved (demo). Plug this into your API.");
+
+    if (!res.ok) {
+      const error = await res.json();
+      alert(error.error || "Failed to create patient");
+      return;
+    }
+
     router.push("/dashboard/patients");
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong");
+  }
+};
+
 
   return (
     <main className="w-full">

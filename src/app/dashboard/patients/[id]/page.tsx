@@ -1,68 +1,43 @@
 // src/app/dashboard/patients/[id]/page.tsx
 "use client";
 
-import { useRef, useState, use as usePromise } from "react";
+import { useState, useEffect, useRef } from "react";
 import Topbar from "@/components/Topbar";
-import { patients, patientDocs } from "@/lib/mock";
-import type { Patient } from "@/types/patient";
-import type { PatientDoc } from "@/lib/mock";
 import { FileText, Star, StarOff, UploadCloud } from "lucide-react";
 
 /* ----------------- Helpers: patient meta with fallbacks -------------- */
 
-function buildPatientMeta(p: Patient) {
-  type PatientWithOptional = Patient & {
-    dob?: string;
-    registrationDate?: string;
-    lastVisit?: string;
-    address?: string;
-    allergies?: string;
-    chronicDiseases?: string;
-    bloodType?: string;
-    pastIllnesses?: string;
-  };
-
-  const src = p as PatientWithOptional;
-
+function buildPatientMeta(p: any) {
   return {
-    dob: src.dob ?? "23.07.1994",
-    registrationDate: src.registrationDate ?? src.lastVisit ?? "12 May 2022",
-    address: src.address ?? "Nouakchott, Mauritania",
-    allergies: src.allergies ?? "None reported",
-    chronicDiseases: src.chronicDiseases ?? "Hypertension",
-    bloodType: src.bloodType ?? "O+",
-    pastIllnesses: src.pastIllnesses ?? "COVID-19 (2022)",
+    dob: p.dob ?? "23.07.1994",
+    registrationDate: p.registrationDate ?? p.lastVisit ?? "12 May 2022",
+    address: p.address ?? "Nouakchott, Mauritania",
+    allergies: p.allergies ?? "None reported",
+    chronicDiseases: p.chronicDiseases ?? "Hypertension",
+    bloodType: p.bloodType ?? "O+",
+    pastIllnesses: p.pastIllnesses ?? "COVID-19 (2022)",
   };
 }
 
 /* -------------------------- Documents panel ------------------------- */
 
-function DocumentsPanel({ docs }: { docs: PatientDoc[] }) {
+function DocumentsPanel({ docs }: { docs: any[] }) {
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"all" | "favorite" | "recent">("recent");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleImportClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
+  const handleImportClick = () => fileInputRef.current?.click();
 
-  const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = (
-    event
-  ) => {
+  const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    console.log("Selected file:", file);
     alert(`Selected file: ${file.name}`);
     event.target.value = "";
   };
 
   const filtered = docs
-    .filter((d) =>
-      d.title.toLowerCase().includes(query.trim().toLowerCase())
-    )
+    .filter((d) => d.title.toLowerCase().includes(query.trim().toLowerCase()))
     .filter((d, idx) => {
       if (tab === "favorite") return d.isFavorite;
       if (tab === "recent") return idx < 4;
@@ -74,9 +49,7 @@ function DocumentsPanel({ docs }: { docs: PatientDoc[] }) {
       {/* Header */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">
-            Documents
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900">Documents</h2>
           <p className="text-xs text-slate-500">
             Upload and manage medical documents associated with this patient.
           </p>
@@ -93,16 +66,11 @@ function DocumentsPanel({ docs }: { docs: PatientDoc[] }) {
           </button>
 
           {/* hidden file input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={handleFileChange}
-          />
+          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
         </div>
       </div>
 
-      {/* Tabs (left) + search (right) */}
+      {/* Tabs + search */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Tabs LEFT */}
         <div className="inline-flex rounded-full bg-slate-100 p-1 text-xs font-medium text-slate-500">
@@ -111,9 +79,7 @@ function DocumentsPanel({ docs }: { docs: PatientDoc[] }) {
             onClick={() => setTab("favorite")}
             className={
               "rounded-full px-3 py-1 transition " +
-              (tab === "favorite"
-                ? "bg-white text-emerald-600 shadow-sm"
-                : "hover:text-slate-700")
+              (tab === "favorite" ? "bg-white text-emerald-600 shadow-sm" : "hover:text-slate-700")
             }
           >
             Favorite
@@ -123,9 +89,7 @@ function DocumentsPanel({ docs }: { docs: PatientDoc[] }) {
             onClick={() => setTab("recent")}
             className={
               "rounded-full px-3 py-1 transition " +
-              (tab === "recent"
-                ? "bg-white text-emerald-600 shadow-sm"
-                : "hover:text-slate-700")
+              (tab === "recent" ? "bg-white text-emerald-600 shadow-sm" : "hover:text-slate-700")
             }
           >
             Recently added
@@ -135,9 +99,7 @@ function DocumentsPanel({ docs }: { docs: PatientDoc[] }) {
             onClick={() => setTab("all")}
             className={
               "rounded-full px-3 py-1 transition " +
-              (tab === "all"
-                ? "bg-white text-emerald-600 shadow-sm"
-                : "hover:text-slate-700")
+              (tab === "all" ? "bg-white text-emerald-600 shadow-sm" : "hover:text-slate-700")
             }
           >
             All docs
@@ -166,9 +128,7 @@ function DocumentsPanel({ docs }: { docs: PatientDoc[] }) {
               <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500">
                 <FileText className="h-4 w-4" />
               </span>
-              <p className="text-xs leading-snug text-slate-700 line-clamp-4">
-                {doc.title}
-              </p>
+              <p className="text-xs leading-snug text-slate-700 line-clamp-4">{doc.title}</p>
             </div>
 
             <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400">
@@ -209,63 +169,81 @@ function DocumentsPanel({ docs }: { docs: PatientDoc[] }) {
 
 /* ---------------------------- Page component ---------------------------- */
 
-export default function PatientProfilePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  // Next.js 15: params is a Promise
-  const { id } = usePromise(params);
+export default function PatientProfilePage({ params }: { params: { id: string } }) {
+  const { id } = params;
 
-  const patient = patients.find(
-    (p) => String(p.id) === id
-  ) as Patient | undefined;
+  const [patient, setPatient] = useState<any>(null);
+  const [docs, setDocs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  if (!patient) {
+ useEffect(() => {
+  async function loadData() {
+    try {
+      const res = await fetch(`/api/patients/${id}`);
+      if (res.status === 404) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      const { patient, documents } = await res.json();
+      setPatient(patient);
+      setDocs(documents || []);
+    } catch (error) {
+      console.error("Failed to load patient", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadData();
+}, [id]);
+
+
+  if (loading) {
     return (
       <main className="w-full">
         <Topbar title="Patient Profile" />
-        <div className="px-4 py-6 text-sm text-red-600">
-          Patient not found.
-        </div>
+        <div className="px-4 py-6 text-sm text-gray-500">Loading...</div>
+      </main>
+    );
+  }
+
+  if (notFound || !patient) {
+    return (
+      <main className="w-full">
+        <Topbar title="Patient Profile" />
+        <div className="px-4 py-6 text-sm text-red-600">Patient not found.</div>
       </main>
     );
   }
 
   const initials = patient.name
-    .split(" ")
-    .map((n) => n[0])
+    ?.split(" ")
+    .map((n: string) => n[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
 
   const meta = buildPatientMeta(patient);
 
-  // Docs for this specific patient
-  const docsForPatient = patientDocs.filter(
-    (d) => d.patientId === patient.id
-  );
-
   return (
     <main className="w-full">
       <Topbar title="Patient Profile" />
 
       <section className="px-3 pb-8 pt-4 sm:px-4 lg:px-6">
-        {/* Top 3 cards: identity, general info, anamnesis */}
+        {/* Top 3 cards */}
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Identity card */}
           <div className="card flex flex-col items-center px-6 py-8 text-center">
             <div className="mb-4 flex h-28 w-28 items-center justify-center rounded-full bg-emerald-50 text-3xl font-semibold text-emerald-600">
               {initials}
             </div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              {patient.name}
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900">{patient.name}</h2>
 
             <p className="mt-1 text-xs text-slate-500">{patient.email}</p>
-            {patient.phone && (
-              <p className="mt-1 text-xs text-slate-500">{patient.phone}</p>
-            )}
+            {patient.phone && <p className="mt-1 text-xs text-slate-500">{patient.phone}</p>}
 
             {patient.idnum && (
               <p className="mt-4 text-xs font-medium text-slate-400">
@@ -276,9 +254,7 @@ export default function PatientProfilePage({
 
           {/* General information */}
           <div className="card px-6 py-6">
-            <h3 className="mb-4 text-sm font-semibold text-slate-800">
-              General Information
-            </h3>
+            <h3 className="mb-4 text-sm font-semibold text-slate-800">General Information</h3>
             <dl className="grid grid-cols-1 gap-x-4 gap-y-3 text-xs text-slate-600 sm:grid-cols-2">
               <div>
                 <dt className="text-slate-400">Date of birth</dt>
@@ -297,9 +273,7 @@ export default function PatientProfilePage({
 
           {/* Anamnesis */}
           <div className="card px-6 py-6">
-            <h3 className="mb-4 text-sm font-semibold text-slate-800">
-              Anamnesis
-            </h3>
+            <h3 className="mb-4 text-sm font-semibold text-slate-800">Anamnesis</h3>
             <dl className="grid grid-cols-1 gap-y-3 text-xs text-slate-600">
               <div>
                 <dt className="text-slate-400">Allergies</dt>
@@ -322,7 +296,7 @@ export default function PatientProfilePage({
         </div>
 
         {/* Documents section */}
-        <DocumentsPanel docs={docsForPatient} />
+        <DocumentsPanel docs={docs} />
       </section>
     </main>
   );

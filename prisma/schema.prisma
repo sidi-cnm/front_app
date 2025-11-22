@@ -1,0 +1,81 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String   @unique
+  passwordHash String
+  image        String?
+  createdAt    DateTime @default(now())
+}
+
+model Patient {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  email      String?
+  phone      String?
+  idnum      String   @unique
+  lastVisit  DateTime?
+  photo      String?
+  status     PatientStatus @default(ACTIVE)
+  createdAt  DateTime @default(now())
+}
+
+model PatientDocument {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  patientId  String   @db.ObjectId
+  title      String
+  date       DateTime?
+  isFavorite Boolean  @default(false)
+  fileUrl    String?
+  createdAt  DateTime @default(now())
+}
+
+model Appointment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  patientId  String   @db.ObjectId
+  date       DateTime
+  room       String?
+  type       AppointmentType
+  status     AppointmentStatus @default(SCHEDULED)
+  createdAt  DateTime @default(now())
+}
+
+model Invoice {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  patientId  String   @db.ObjectId
+  amount     Float
+  status     InvoiceStatus @default(PENDING)
+  dueDate    DateTime?
+  createdAt  DateTime @default(now())
+}
+
+enum PatientStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum AppointmentType {
+  CHECKUP
+  FOLLOWUP
+  EMERGENCY
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+}
