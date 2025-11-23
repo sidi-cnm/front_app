@@ -20,15 +20,22 @@ export default function ProfilePage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // ✅ Load real profile
+  // ✅ Password modal state (INSIDE the component)
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // ✅ Load profile data
   useEffect(() => {
     async function loadProfile() {
       const res = await fetch("/api/profile");
       if (!res.ok) return;
+
       const data = await res.json();
 
       setFullName(data.name || "");
@@ -37,9 +44,11 @@ export default function ProfilePage() {
       setAddress(data.address || "");
       setAvatarPreview(data.image || null);
     }
+
     loadProfile();
   }, []);
 
+  // ✅ Avatar upload
   const handleAvatarClick = () => fileInputRef.current?.click();
 
   const handleAvatarChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
@@ -60,6 +69,7 @@ export default function ProfilePage() {
     }
   };
 
+  // ✅ Save profile
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -77,6 +87,31 @@ export default function ProfilePage() {
     });
 
     alert("✅ Profile updated!");
+  };
+
+  // ✅ Change password
+  const handlePasswordChange = async () => {
+    if (newPassword !== confirmPassword) {
+      alert("❌ Passwords do not match");
+      return;
+    }
+
+    const res = await fetch("/api/change-password", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+
+    if (res.ok) {
+      alert("✅ Password updated");
+      setShowPasswordModal(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } else {
+      const err = await res.json();
+      alert("❌ " + err.error);
+    }
   };
 
   const handleSignOut = () =>
@@ -243,8 +278,9 @@ export default function ProfilePage() {
                 </div>
 
                 <button
-                  onClick={() => alert("Password change coming soon")}
-                  className="rounded-full bg-white px-4 py-1.5 text-xs font-medium text-emerald-600 shadow-sm hover:bg-emerald-50"
+                  type="button"
+                  onClick={() => setShowPasswordModal(true)}
+                  className="mt-3 inline-flex items-center justify-center rounded-full bg-white px-4 py-1.5 text-xs font-medium text-emerald-600 shadow-sm hover:bg-emerald-50 sm:mt-0"
                 >
                   Change password
                 </button>
@@ -253,6 +289,58 @@ export default function ProfilePage() {
           </form>
         </div>
       </section>
+
+      {/* ✅ Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-lg">
+            <h3 className="text-sm font-semibold text-slate-900 mb-4">
+              Change Password
+            </h3>
+
+            <div className="space-y-3">
+              <input
+                type="password"
+                placeholder="Current password"
+                className="input w-full"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+
+              <input
+                type="password"
+                placeholder="New password"
+                className="input w-full"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+
+              <input
+                type="password"
+                placeholder="Confirm password"
+                className="input w-full"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="text-xs px-3 py-1.5 rounded-full bg-slate-200 text-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePasswordChange}
+                className="text-xs px-3 py-1.5 rounded-full bg-emerald-500 text-white"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
