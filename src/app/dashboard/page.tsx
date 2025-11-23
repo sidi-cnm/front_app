@@ -1,6 +1,6 @@
 "use client";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+
+import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 import Topbar from "@/components/Topbar";
@@ -14,12 +14,9 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 
-/** Fixed formatter so UI doesn’t jump between SSR/CSR */
 const numberFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
-
-/* ---------- Small UI Helpers ---------- */
 
 function Badge({
   children,
@@ -43,18 +40,24 @@ function Badge({
   );
 }
 
-/* ---------- MAIN PAGE ---------- */
-
 export default function DashboardPage() {
-  const session =  getServerSession(authOptions);
+  const { data: session, status } = useSession();
 
-  if (!session) redirect("/signin");
-
+  // ✅ Hooks first — no errors
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Load real dashboard data
+  // ✅ Redirect safely (no hook break)
   useEffect(() => {
+    if (status === "unauthenticated") {
+      redirect("/signin");
+    }
+  }, [status]);
+
+  // ✅ Fetch dashboard data
+  useEffect(() => {
+    if (status !== "authenticated") return;
+
     fetch("/api/dashboard")
       .then((res) => res.json())
       .then((json) => {
@@ -65,18 +68,33 @@ export default function DashboardPage() {
         console.error("Dashboard error:", err);
         setLoading(false);
       });
-  }, []);
+  }, [status]);
 
-  if (loading || !data) {
+  // ✅ While checking auth
+  if (status === "loading") {
     return (
       <main className="w-full">
         <Topbar title="Dashboard" />
-        <div className="px-4 py-6 text-sm text-gray-500">Loading dashboard...</div>
+        <div className="px-4 py-6 text-sm text-gray-500">
+          Checking session...
+        </div>
       </main>
     );
   }
 
-  // ✅ Convert KPI boxes to real data
+  // ✅ While loading dashboard data
+  if (loading || !data) {
+    return (
+      <main className="w-full">
+        <Topbar title="Dashboard" />
+        <div className="px-4 py-6 text-sm text-gray-500">
+          Loading dashboard...
+        </div>
+      </main>
+    );
+  }
+
+  // ✅ KPI cards
   const KPIS = [
     {
       label: "Total patients",

@@ -20,12 +20,12 @@ async function main() {
       {
         name: "Sidi Elvaly",
         email: "sidielvaly@gmail.com",
-        passwordHash: await bcrypt.hash("pass123", 10),
+        passwordHash: bcrypt.hashSync("pass123", 10),
       },
       {
         name: "Khatu Ahmed",
         email: "khatu@gmail.com",
-        passwordHash: await bcrypt.hash("pass123", 10),
+        passwordHash: bcrypt.hashSync("pass123", 10),
       },
     ],
   });

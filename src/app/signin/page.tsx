@@ -1,4 +1,3 @@
-// app/signin/page.tsx
 import SignInClient from "./sign-in-client";
 
 export const dynamic = "force-dynamic";
@@ -8,14 +7,13 @@ type SignInSearch = {
   error?: string;
 };
 
-export default async function SignInPage({
+export default function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<SignInSearch>;
+  searchParams?: SignInSearch;
 }) {
-  const sp = await searchParams;
-  const callbackUrl = sp?.callbackUrl ?? "/dashboard";
-  const error = sp?.error ?? null;
+  const callbackUrl = searchParams?.callbackUrl ?? "/dashboard";
+  const error = searchParams?.error ?? null;
 
   return <SignInClient callbackUrl={callbackUrl} error={error} />;
 }
