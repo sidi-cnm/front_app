@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const records = parse(csvText, {
       columns: true,
       skip_empty_lines: true,
-    });
+    }) as Record<string, string>[];
 
     let importedCount = 0;
 

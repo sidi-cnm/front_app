@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-export async function GET(
-  _req: Request, 
-  { params }: { params: { id: string; docId: string } }
-) {
+export async function GET(_req: Request, ctx: any) {
+  const { params } = ctx;
   try {
+    const docId = Array.isArray(params.docId) ? params.docId[0] : params.docId;
+
     const doc = await db.patientDocument.findUnique({
-      where: { id: params.docId },
+      where: { id: docId },
     });
 
     if (!doc) {

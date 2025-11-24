@@ -2,7 +2,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, ctx: any) {
+  const { params } = ctx;
   try {
     const formData = await req.formData();
 
@@ -17,9 +18,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const buffer = Buffer.from(arrayBuffer);
 
     // ✅ Create document entry
+    const patientId = Array.isArray(params.id) ? params.id[0] : params.id;
+
     const newDoc = await db.patientDocument.create({
       data: {
-        patientId: params.id,
+        patientId: patientId,
         title: title || file.name,
         date: new Date(),
         isFavorite: false,

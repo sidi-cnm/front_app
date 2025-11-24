@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: Request, ctx: any) {
+  const { params } = ctx;
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   try {
     // ✅ Fetch patient
     const patient = await db.patient.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!patient) {
@@ -20,7 +19,7 @@ export async function GET(
 
     // ✅ Fetch documents for this patient
     const documents = await db.patientDocument.findMany({
-      where: { patientId: params.id },
+      where: { patientId: id },
       orderBy: { date: "desc" },
     });
 
@@ -38,12 +37,14 @@ export async function GET(
   }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, ctx: any) {
+  const { params } = ctx;
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   try {
     const data = await req.json();
 
     const updated = await db.patient.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: data.name,
         email: data.email || "",
@@ -65,13 +66,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(_req: Request, ctx: any) {
+  const { params } = ctx;
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   try {
     await db.patient.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Patient deleted" });
